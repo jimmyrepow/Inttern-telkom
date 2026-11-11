@@ -140,16 +140,27 @@ export function attendanceEditDialog(record) {
   if (!window.Swal) {
     const nextStatus = window.prompt("Status (on-time / late):", record.status || "on-time");
     if (nextStatus === null) return Promise.resolve(null);
-    const nextCheckIn = window.prompt("Jam masuk (HH:MM):", checkIn);
+    const nextCheckIn = window.prompt("Jam masuk (HH:MM, kosongkan untuk menghapus):", checkIn);
     if (nextCheckIn === null) return Promise.resolve(null);
-    const nextCheckOut = window.prompt("Jam pulang (HH:MM, kosongkan jika belum pulang):", checkOut);
+    const nextCheckOut = window.prompt(
+      "Jam pulang (HH:MM, kosongkan jika belum pulang atau jam masuk dihapus):",
+      nextCheckIn ? checkOut : ""
+    );
     if (nextCheckOut === null) return Promise.resolve(null);
-    if (!/^(on-time|late)$/.test(nextStatus) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(nextCheckIn)) {
+    if (!/^(on-time|late)$/.test(nextStatus)) {
       toast("Status atau jam masuk tidak valid.", "danger");
+      return Promise.resolve(null);
+    }
+    if (nextCheckIn && !/^([01]\d|2[0-3]):[0-5]\d$/.test(nextCheckIn)) {
+      toast("Jam masuk harus berformat HH:MM atau dikosongkan.", "danger");
       return Promise.resolve(null);
     }
     if (nextCheckOut && !/^([01]\d|2[0-3]):[0-5]\d$/.test(nextCheckOut)) {
       toast("Jam pulang harus berformat HH:MM.", "danger");
+      return Promise.resolve(null);
+    }
+    if (!nextCheckIn && nextCheckOut) {
+      toast("Jam pulang harus dikosongkan jika jam masuk dihapus.", "danger");
       return Promise.resolve(null);
     }
     if (nextCheckOut && nextCheckOut < nextCheckIn) {
@@ -158,7 +169,7 @@ export function attendanceEditDialog(record) {
     }
     return Promise.resolve({
       status: nextStatus,
-      checkIn: nextCheckIn,
+      checkIn: nextCheckIn || null,
       checkOut: nextCheckOut
     });
   }
@@ -174,7 +185,8 @@ export function attendanceEditDialog(record) {
           <option value="late"${record.status === "late" ? " selected" : ""}>Telat</option>
         </select>
         <label class="form-label small fw-semibold" for="edit-attendance-check-in">Jam masuk</label>
-        <input id="edit-attendance-check-in" class="form-control mb-3" type="time" value="${esc(checkIn)}" required />
+        <input id="edit-attendance-check-in" class="form-control mb-1" type="time" value="${esc(checkIn)}" />
+        <div class="form-text mb-3">Kosongkan jam masuk untuk menghapus waktu hadir. Jam pulang akan ikut dikosongkan.</div>
         <label class="form-label small fw-semibold" for="edit-attendance-check-out">Jam pulang</label>
         <input id="edit-attendance-check-out" class="form-control" type="time" value="${esc(checkOut)}" />
         <div class="form-text">Kosongkan jam pulang jika peserta belum melakukan absen pulang.</div>
@@ -192,7 +204,17 @@ export function attendanceEditDialog(record) {
     },
     buttonsStyling: false,
     showClass: { popup: "swal2-show swal-soft-show" },
-    didOpen: () => document.getElementById("edit-attendance-status").focus(),
+    didOpen: () => {
+      const checkInInput = document.getElementById("edit-attendance-check-in");
+      const checkOutInput = document.getElementById("edit-attendance-check-out");
+      const updateCheckoutInput = () => {
+        if (!checkInInput.value) checkOutInput.value = "";
+        checkOutInput.disabled = !checkInInput.value;
+      };
+      checkInInput.addEventListener("input", updateCheckoutInput);
+      updateCheckoutInput();
+      document.getElementById("edit-attendance-status").focus();
+    },
     preConfirm: () => {
       const nextStatus = document.getElementById("edit-attendance-status").value;
       const nextCheckIn = document.getElementById("edit-attendance-check-in").value;
@@ -201,8 +223,8 @@ export function attendanceEditDialog(record) {
         window.Swal.showValidationMessage("Pilih status kehadiran yang valid.");
         return false;
       }
-      if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(nextCheckIn)) {
-        window.Swal.showValidationMessage("Jam masuk wajib diisi dengan format HH:MM.");
+      if (nextCheckIn && !/^([01]\d|2[0-3]):[0-5]\d$/.test(nextCheckIn)) {
+        window.Swal.showValidationMessage("Jam masuk harus berformat HH:MM atau dikosongkan.");
         return false;
       }
       if (nextCheckOut && !/^([01]\d|2[0-3]):[0-5]\d$/.test(nextCheckOut)) {
@@ -213,9 +235,13 @@ export function attendanceEditDialog(record) {
         window.Swal.showValidationMessage("Jam pulang tidak boleh lebih awal dari jam masuk.");
         return false;
       }
+      if (!nextCheckIn && nextCheckOut) {
+        window.Swal.showValidationMessage("Jam pulang harus dikosongkan jika jam masuk dihapus.");
+        return false;
+      }
       return {
         status: nextStatus,
-        checkIn: nextCheckIn,
+        checkIn: nextCheckIn || null,
         checkOut: nextCheckOut
       };
     }

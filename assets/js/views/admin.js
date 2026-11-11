@@ -692,7 +692,7 @@ async function handleEditAttendance(attendanceId, button, refresh) {
   try {
     const result = await rpc("admin_update_attendance", {
       p_id: attendanceId,
-      p_check_in: edited.checkIn,
+      p_check_in: edited.checkIn || null,
       p_check_out: edited.checkOut,
       p_status: edited.status
     });

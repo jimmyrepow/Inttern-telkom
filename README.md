@@ -57,6 +57,7 @@ tidak dipakai.
       0004_security_cleanup.sql
       0005_interns.sql      akun peserta magang
       0006_attendance_edit_and_checkout_limit.sql
+      0007_allow_admin_clear_check_in.sql
 ```
 
 ### Aturan modularisasi
@@ -120,6 +121,9 @@ Migrasi `0006_attendance_edit_and_checkout_limit.sql` menambahkan batas jam
 pulang dengan nilai awal `17:00`, validasi pulang di database, dan RPC admin
 untuk mengoreksi status serta jam masuk/pulang. Terapkan dengan `npm run migrate`,
 lalu verifikasi dengan `npm run migrate:status`.
+Migrasi `0007_allow_admin_clear_check_in.sql` memungkinkan admin mengosongkan
+jam masuk. Jika jam masuk dikosongkan, jam pulang wajib ikut kosong agar catatan
+tidak menyatakan intern pulang tanpa memiliki jam masuk.
 Jika koneksi dari komputer tidak tersedia, buka Supabase Dashboard > SQL Editor
 dan jalankan isi file migrasi `0006_attendance_edit_and_checkout_limit.sql`,
 lalu muat ulang aplikasi agar RPC baru terdeteksi.
@@ -248,7 +252,9 @@ token sebagai `p_token`; server memvalidasinya ke tabel `public.sessions`.
 - Dashboard admin:
   - Statistik peserta, hadir, tepat waktu, telat, belum absen.
   - Filter absensi berdasarkan pencarian, tanggal, dan status.
-  - Edit status kehadiran, jam masuk, dan jam pulang; perubahan dicatat di log.
+  - Edit status kehadiran, jam masuk, dan jam pulang; admin boleh mengosongkan
+    jam masuk. Jika jam masuk dikosongkan, jam pulang ikut dikosongkan untuk
+    menjaga konsistensi absensi. Perubahan dicatat di log.
   - Tambah/edit peserta, reset password, aktif/nonaktifkan akun.
   - Hapus satu absensi, hapus seluruh absensi peserta, hapus akun.
   - Pengaturan nama aplikasi, batas telat, jam mulai pulang, zona waktu, kantor, radius.
