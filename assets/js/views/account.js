@@ -1,7 +1,15 @@
 import { state } from "../core/store.js";
 import { rpc, handleError } from "../core/api.js";
-import { esc, toast, withBusy } from "../lib/dom.js";
-import { formatDateTime, initials, isActiveUser } from "../lib/format.js";
+import { esc, toast, withBusy, createModal } from "../lib/dom.js";
+import { formatDateTime, isActiveUser } from "../lib/format.js";
+import {
+  renderAvatar,
+  avatarEmoji,
+  avatarColor,
+  AVATAR_EMOJIS,
+  AVATAR_COLORS
+} from "../lib/avatar.js";
+import { renderAchievementsCard } from "../lib/achievements.js";
 
 const STRENGTH_LABELS = [
   "",
@@ -35,10 +43,13 @@ export function renderAccount() {
   const active = isActiveUser(user);
   const homeTab = admin ? "attendance" : "absen";
   const homeLabel = admin ? "Buka absensi" : "Absen sekarang";
+  const myAttendance = (state.attendance || []).filter(
+    (row) => String(row.user_id) === String(user.id)
+  );
 
   return `
     <section class="account-hero">
-      <div class="account-hero-avatar" aria-hidden="true">${esc(initials(user.name))}</div>
+      <div class="account-hero-avatar">${renderAvatar(user, "avatar-xl")}</div>
       <div class="account-hero-body">
         <span class="badge ${admin ? "bg-dark" : "badge-soft"} rounded-pill">${esc(roleLabel(role))}</span>
         <h2>${esc(user.name || "-")}</h2>
@@ -48,6 +59,9 @@ export function renderAccount() {
         </p>
       </div>
       <div class="account-hero-actions">
+        <button class="btn btn-outline-secondary rounded-pill px-4" id="acct-avatar-btn" type="button">
+          <i class="bi bi-emoji-smile me-2"></i>Ubah avatar
+        </button>
         <button class="btn btn-primary rounded-pill px-4" type="button" data-nav="${homeTab}">
           <i class="bi ${admin ? "bi-calendar2-check" : "bi-fingerprint"} me-2"></i>${esc(homeLabel)}
         </button>
@@ -180,6 +194,7 @@ export function renderAccount() {
         </div>
       </div>
     </div>
+    ${renderAchievementsCard(myAttendance)}
   `;
 }
 
@@ -188,11 +203,169 @@ export function attachAccountEvents(context) {
   bindPasswordToggles();
   bindProfileForm(ctx);
   bindPasswordForm(ctx);
+  bindAvatarDialog(ctx);
 
   const logoutBtn = document.getElementById("acct-logout");
   if (logoutBtn && typeof ctx.logout === "function") {
     logoutBtn.addEventListener("click", () => ctx.logout());
   }
+}
+
+function bindAvatarDialog(context) {
+  const button = document.getElementById("acct-avatar-btn");
+  if (!button) return;
+  button.addEventListener("click", () => openAvatarDialog(context));
+}
+
+function openAvatarDialog(context) {
+  const user = state.user || {};
+  const dialogId = "avatar-dialog-" + Date.now();
+  let selectedEmoji = avatarEmoji(user);
+  let selectedColor = avatarColor(user);
+
+  const { element, modal } = createModal(`
+    <div class="modal fade" id="${dialogId}" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content rounded-4 border-0">
+          <div class="modal-header border-0 pb-0">
+            <div>
+              <h2 class="h5 fw-bold mb-0">Ubah avatar</h2>
+              <div class="small text-secondary">Pilih emoji dan warna yang mewakili dirimu.</div>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+          </div>
+          <div class="modal-body">
+            <div class="avatar-preview-wrap">
+              <div id="${dialogId}-preview">${renderAvatar(user, "avatar-xl")}</div>
+              <div class="small text-secondary">Pratinjau avatar</div>
+            </div>
+            <div class="small fw-semibold mb-2">Emoji</div>
+            <div class="avatar-emoji-grid">
+              ${AVATAR_EMOJIS.map(
+                (emoji) =>
+                  '<button type="button" class="avatar-emoji-option' +
+                  (emoji === selectedEmoji ? " is-selected" : "") +
+                  '" data-emoji="' +
+                  esc(emoji) +
+                  '" aria-label="Pilih emoji ' +
+                  esc(emoji) +
+                  '" aria-pressed="' +
+                  (emoji === selectedEmoji ? "true" : "false") +
+                  '">' +
+                  esc(emoji) +
+                  "</button>"
+              ).join("")}
+            </div>
+            <div class="small fw-semibold mt-3 mb-2">Warna latar</div>
+            <div class="avatar-color-grid">
+              ${AVATAR_COLORS.map(
+                (color) =>
+                  '<button type="button" class="avatar-color-option' +
+                  (color === selectedColor ? " is-selected" : "") +
+                  '" style="background:' +
+                  color +
+                  '" data-color="' +
+                  color +
+                  '" aria-label="Pilih warna ' +
+                  color +
+                  '" aria-pressed="' +
+                  (color === selectedColor ? "true" : "false") +
+                  '"></button>'
+              ).join("")}
+            </div>
+            <div class="mt-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+              <button class="btn btn-outline-secondary btn-sm rounded-pill" type="button" data-reset-avatar>Kembali ke inisial</button>
+              <span class="small text-secondary">Avatar tampil di menu dan daftar peserta.</span>
+            </div>
+            <div class="alert alert-danger small py-2 px-3 mt-3 mb-0 d-none" data-error role="alert" aria-live="polite"></div>
+          </div>
+          <div class="modal-footer border-0 pt-0">
+            <button class="btn btn-outline-secondary rounded-pill px-4" type="button" data-bs-dismiss="modal">Batal</button>
+            <button class="btn btn-primary rounded-pill px-4" type="button" data-save-avatar>Simpan avatar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `);
+
+  const preview = element.querySelector("#" + dialogId + "-preview");
+  const emojiButtons = Array.from(element.querySelectorAll("[data-emoji]"));
+  const colorButtons = Array.from(element.querySelectorAll("[data-color]"));
+  const resetButton = element.querySelector("[data-reset-avatar]");
+  const saveButton = element.querySelector("[data-save-avatar]");
+  const errorBox = element.querySelector("[data-error]");
+
+  const paint = () => {
+    preview.innerHTML = renderAvatar(
+      Object.assign({}, user, { avatar_emoji: selectedEmoji, avatar_color: selectedColor }),
+      "avatar-xl"
+    );
+    emojiButtons.forEach((button) => {
+      const selected = button.dataset.emoji === selectedEmoji;
+      button.classList.toggle("is-selected", selected);
+      button.setAttribute("aria-pressed", selected ? "true" : "false");
+    });
+    colorButtons.forEach((button) => {
+      const selected = button.dataset.color === selectedColor;
+      button.classList.toggle("is-selected", selected);
+      button.setAttribute("aria-pressed", selected ? "true" : "false");
+    });
+  };
+
+  emojiButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      selectedEmoji = button.dataset.emoji || "";
+      errorBox.classList.add("d-none");
+      paint();
+    });
+  });
+  colorButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      selectedColor = button.dataset.color || "#ec4899";
+      errorBox.classList.add("d-none");
+      paint();
+    });
+  });
+  resetButton.addEventListener("click", () => {
+    selectedEmoji = "";
+    selectedColor = "#ec4899";
+    errorBox.classList.add("d-none");
+    paint();
+  });
+
+  saveButton.addEventListener("click", async () => {
+    const restore = withBusy(saveButton, "Menyimpan...");
+    try {
+      const result = await rpc("app_update_avatar", {
+        p_emoji: selectedEmoji,
+        p_color: selectedColor
+      });
+      const updated = (result && result.user) || {};
+      state.user = Object.assign({}, state.user, {
+        avatar_emoji:
+          updated.avatar_emoji !== undefined ? updated.avatar_emoji : selectedEmoji,
+        avatar_color: updated.avatar_color || selectedColor
+      });
+      const index = state.users.findIndex((item) => String(item.id) === String(state.user.id));
+      if (index !== -1) {
+        state.users[index] = Object.assign({}, state.users[index], {
+          avatar_emoji: state.user.avatar_emoji,
+          avatar_color: state.user.avatar_color
+        });
+      }
+      modal.hide();
+      toast((result && result.message) || "Ikon profil berhasil diperbarui.", "success");
+      if (typeof context.rerender === "function") context.rerender();
+    } catch (error) {
+      errorBox.textContent = String((error && error.message) || "Gagal menyimpan avatar.");
+      errorBox.classList.remove("d-none");
+      handleError(error);
+      restore();
+    }
+  });
+
+  element.addEventListener("hidden.bs.modal", () => element.remove());
+  modal.show();
 }
 
 function bindPasswordToggles() {

@@ -48,7 +48,7 @@ export function withBusy(button, label) {
   };
 }
 
-function createModal(markup) {
+export function createModal(markup) {
   modalCounter += 1;
   const host = document.createElement("div");
   host.innerHTML = markup.trim();

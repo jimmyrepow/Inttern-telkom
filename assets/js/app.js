@@ -9,6 +9,7 @@ import {
 import { APP_NAME, AUTO_REFRESH_MS } from "./core/config.js";
 import { readToken, clearToken } from "./core/session.js";
 import { esc } from "./lib/dom.js";
+import { renderAvatar } from "./lib/avatar.js";
 import { renderLogin } from "./views/login.js";
 import { renderAdmin, attachAdminEvents } from "./views/admin.js";
 import { renderIntern, attachInternEvents } from "./views/intern.js";
@@ -58,16 +59,6 @@ function roleKey() {
   return String((state.user && state.user.role) || "intern").toLowerCase() === "admin"
     ? "admin"
     : "intern";
-}
-
-function initials(name) {
-  return String(name || "?")
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part.charAt(0))
-    .join("")
-    .toUpperCase();
 }
 
 function renderLoading(message) {
@@ -214,6 +205,7 @@ async function refreshData(options) {
 function canAutoRefresh() {
   if (!state.user || state.page !== "dashboard" || document.hidden) return false;
   if (state.cameraStream) return false;
+  if (document.querySelector(".modal.show")) return false;
   if (state.ui.tab === "settings" || state.ui.tab === "guide" || state.ui.tab === "account")
     return false;
   const active = document.activeElement;
@@ -287,7 +279,7 @@ function renderSidebar(role) {
       </nav>
       <div class="sidebar-footer">
         <div class="sidebar-user">
-          <span class="avatar">${esc(initials(state.user.name))}</span>
+          ${renderAvatar(state.user, "avatar-sm")}
           <div class="min-w-0">
             <strong>${esc(state.user.name)}</strong>
             <small>${esc(state.user.role)}</small>
@@ -328,12 +320,12 @@ function renderHeader(role, isAdmin) {
         ${isAdmin ? '<button class="header-icon-btn d-none d-lg-inline-flex" id="export-btn" type="button" aria-label="Export Excel" title="Export Excel"><i class="bi bi-download"></i></button>' : ""}
         <div class="dropdown">
           <button class="user-chip" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Menu akun">
-            <span class="avatar">${esc(initials(state.user.name))}</span>
+            ${renderAvatar(state.user, "avatar-sm")}
             <i class="bi bi-chevron-down"></i>
           </button>
           <ul class="dropdown-menu dropdown-menu-end account-menu">
             <li class="account-menu-head">
-              <span class="avatar">${esc(initials(state.user.name))}</span>
+              ${renderAvatar(state.user, "avatar-sm")}
               <div class="min-w-0">
                 <strong>${esc(state.user.name)}</strong>
                 <small>${esc(state.user.username)} &middot; ${esc(state.user.role)}</small>

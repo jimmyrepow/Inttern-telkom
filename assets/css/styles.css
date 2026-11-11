@@ -1837,3 +1837,231 @@ body.sidebar-locked {
     font-size: 1.4rem;
   }
 }
+
+/* =========================================================
+   Avatar, pagination, achievement, dan modal peserta
+   ========================================================= */
+
+.avatar.avatar-sm {
+  width: 34px;
+  height: 34px;
+  font-size: 0.82rem;
+}
+
+.avatar.avatar-xl {
+  width: 72px;
+  height: 72px;
+  border-radius: 1.2rem;
+  font-size: 2rem;
+}
+
+.avatar-emoji {
+  font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
+  line-height: 1;
+}
+
+.account-hero-avatar {
+  padding: 0;
+  overflow: hidden;
+}
+
+.account-hero-avatar .avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  box-shadow: none;
+}
+
+.account-hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.avatar-preview-wrap {
+  display: grid;
+  justify-items: center;
+  gap: 0.45rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--gray-200);
+  border-radius: 1rem;
+  background: linear-gradient(135deg, #fff1f5 0%, #f5f3ff 100%);
+}
+
+.avatar-preview-wrap .avatar {
+  width: 88px;
+  height: 88px;
+  border-radius: 1.35rem;
+  font-size: 2.5rem;
+}
+
+.avatar-emoji-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(42px, 1fr));
+  gap: 0.4rem;
+}
+
+.avatar-emoji-option {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  border: 2px solid transparent;
+  border-radius: 0.8rem;
+  background: var(--gray-100);
+  font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.avatar-emoji-option:hover {
+  transform: translateY(-1px);
+  background: var(--pink-100);
+}
+
+.avatar-emoji-option.is-selected {
+  border-color: var(--pink-500);
+  background: var(--pink-100);
+  box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.14);
+}
+
+.avatar-color-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.avatar-color-option {
+  width: 34px;
+  height: 34px;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--gray-200);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.avatar-color-option:hover {
+  transform: scale(1.08);
+}
+
+.avatar-color-option.is-selected {
+  box-shadow: 0 0 0 2px var(--gray-900);
+  transform: scale(1.08);
+}
+
+.table-pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.pager-info {
+  font-size: 0.78rem;
+  color: var(--gray-500);
+}
+
+.table-pager .pagination {
+  flex-wrap: wrap;
+}
+
+.table-pager .page-link {
+  margin: 0 0.08rem;
+  border-color: var(--gray-200);
+  border-radius: 0.5rem;
+  color: var(--gray-700);
+  padding: 0.28rem 0.58rem;
+}
+
+.table-pager .page-item.active .page-link {
+  border-color: var(--pink-500);
+  background: var(--pink-500);
+  color: #fff;
+}
+
+.table-pager .page-item.disabled .page-link {
+  color: #9ca3af;
+}
+
+.achievement-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(215px, 1fr));
+  gap: 0.75rem;
+}
+
+.achievement {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  padding: 0.85rem;
+  border: 1px solid var(--gray-200);
+  border-radius: 1rem;
+  background: #fff;
+}
+
+.achievement.is-unlocked {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+}
+
+.achievement-icon {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.8rem;
+  background: var(--gray-100);
+  color: var(--gray-500);
+  font-size: 1.1rem;
+}
+
+.achievement.is-unlocked .achievement-icon {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.achievement-title {
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.achievement-desc {
+  margin-bottom: 0.4rem;
+  font-size: 0.72rem;
+  color: var(--gray-500);
+}
+
+.achievement-progress {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--gray-200);
+}
+
+.achievement-progress .progress-bar {
+  border-radius: 999px;
+  background: var(--pink-500);
+}
+
+.achievement.is-unlocked .achievement-progress .progress-bar {
+  background: var(--success);
+}
+
+@media (min-width: 768px) {
+  .avatar.avatar-xl {
+    width: 84px;
+    height: 84px;
+    font-size: 2.2rem;
+  }
+
+  .account-hero-avatar .avatar {
+    font-size: 2.2rem;
+  }
+}

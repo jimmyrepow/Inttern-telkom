@@ -22,7 +22,10 @@ export const state = {
     search: "",
     date: "",
     status: "",
-    userFormId: "",
+    attendancePage: 1,
+    userPage: 1,
+    userSearch: "",
+    userRole: "",
     historyMonth: "",
     sidebarOpen: false
   }
@@ -48,7 +51,10 @@ export function resetSessionState() {
   state.ui.search = "";
   state.ui.date = "";
   state.ui.status = "";
-  state.ui.userFormId = "";
+  state.ui.attendancePage = 1;
+  state.ui.userPage = 1;
+  state.ui.userSearch = "";
+  state.ui.userRole = "";
   state.ui.historyMonth = "";
   state.ui.sidebarOpen = false;
 }

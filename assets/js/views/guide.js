@@ -42,8 +42,8 @@ export function renderGuide(role) {
         <section class="guide-card">
           <h3><span class="guide-icon"><i class="bi bi-people"></i></span> Mengelola peserta</h3>
           <ol class="guide-steps">
-            <li><span>1</span><div><strong>Buka menu Peserta</strong><p>Lihat daftar akun, status aktif, dan waktu login terakhir.</p></div></li>
-            <li><span>2</span><div><strong>Tambah atau edit</strong><p>Isi nama, username, password, role, lalu simpan. Username tidak boleh sama.</p></div></li>
+            <li><span>1</span><div><strong>Buka menu Peserta</strong><p>Lihat daftar akun, status aktif, avatar, dan waktu login terakhir. Gunakan pencarian, filter role, serta pagination untuk menemukan akun.</p></div></li>
+            <li><span>2</span><div><strong>Tambah atau edit</strong><p>Tekan <em>Tambah peserta</em> atau <em>Edit</em> untuk membuka modal. Isi nama, username, password, role, dan status aktif, lalu simpan.</p></div></li>
             <li><span>3</span><div><strong>Reset password</strong><p>Tekan tombol Reset password. Modal sudah terisi pola <code>username123</code>; ganti bila perlu.</p></div></li>
           </ol>
           <div class="guide-note"><i class="bi bi-info-circle"></i><span>Pola akun peserta: username = nama depan, password = nama depan + <code>123</code>. Contoh <code>nayla</code> / <code>nayla123</code>. Peserta juga dapat mengganti password sendiri lewat menu <strong>Akun</strong>; gunakan Reset password jika peserta lupa password lama.</span></div>
@@ -67,11 +67,11 @@ export function renderGuide(role) {
         <div class="guide-two-col">
           <div>
             <h4>Melihat rekap</h4>
-            <p>Menu Absensi menampilkan seluruh absensi. Gunakan pencarian, filter tanggal, dan filter status untuk mempersempit data.</p>
+            <p>Menu Absensi menampilkan seluruh absensi dengan pagination. Gunakan pencarian, filter tanggal, dan filter status untuk mempersempit data.</p>
           </div>
           <div>
             <h4>Export Excel</h4>
-            <p>Tekan Export Excel di header atau di menu Pengaturan. File berisi sheet Users, Attendance, Settings, dan Logs.</p>
+            <p>Tekan Export Excel di header atau di menu Pengaturan. File berisi sheet <strong>Absensi</strong> (dengan foto masuk/pulang tertanam), <strong>Akun</strong>, <strong>Pengaturan</strong>, dan <strong>Log</strong>.</p>
           </div>
           <div>
             <h4>Hapus data</h4>
@@ -108,6 +108,12 @@ export function renderGuide(role) {
         </section>
 
         <section class="guide-card">
+          <h3><span class="guide-icon"><i class="bi bi-trophy"></i></span> Avatar dan pencapaian</h3>
+          <p>Buka menu <strong>Akun</strong>, lalu tekan <em>Ubah avatar</em> untuk memilih emoji dan warna. Avatar tampil di menu, header, dan daftar peserta admin.</p>
+          <p class="mb-0">Kartu <strong>Pencapaian saya</strong> menampilkan lencana yang terbuka dari kebiasaan absen: langkah pertama, tepat waktu, rajin, disiplin bulan ini, dan streak. Lencana terbuka otomatis saat target tercapai.</p>
+        </section>
+
+        <section class="guide-card">
           <h3><span class="guide-icon"><i class="bi bi-shield-check"></i></span> Keamanan akun</h3>
           <ul class="guide-list guide-list-compact">
             <li><i class="bi bi-check2-circle"></i><span>Jangan bagikan password ke orang lain.</span></li>
@@ -119,10 +125,10 @@ export function renderGuide(role) {
       </div>
 
       <section class="guide-card">
-        <h3><span class="guide-icon"><i class="bi bi-person-gear"></i></span> Mengubah nama dan password</h3>
+        <h3><span class="guide-icon"><i class="bi bi-person-gear"></i></span> Mengubah profil dan password</h3>
         <ol class="guide-steps">
           <li><span>1</span><div><strong>Buka menu Akun</strong><p>Klik menu <em>Akun</em> di sidebar atau ikon profil di kanan atas, lalu pilih <em>Akun saya</em>.</p></div></li>
-          <li><span>2</span><div><strong>Ubah nama</strong><p>Perbarui nama lengkap lalu tekan <em>Simpan nama</em>. Nama baru dipakai untuk absensi berikutnya.</p></div></li>
+          <li><span>2</span><div><strong>Ubah nama dan avatar</strong><p>Perbarui nama lengkap lalu tekan <em>Simpan nama</em>. Tekan <em>Ubah avatar</em> untuk memilih emoji dan warna.</p></div></li>
           <li><span>3</span><div><strong>Ganti password</strong><p>Isi password lama, password baru, lalu ulangi password baru. Indikator kekuatan dan daftar syarat membantu memastikan password sudah benar.</p></div></li>
           <li><span>4</span><div><strong>Simpan</strong><p>Setelah berhasil, sesi di perangkat lain otomatis keluar. Perangkat yang sedang dipakai tetap masuk.</p></div></li>
         </ol>
@@ -179,7 +185,7 @@ export function renderGuide(role) {
             <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq-export" aria-expanded="false" aria-controls="faq-export">Export Excel tidak berjalan</button>
           </h4>
           <div id="faq-export" class="accordion-collapse collapse" data-bs-parent="#guide-faq">
-            <div class="accordion-body">Pastikan login sebagai admin dan koneksi stabil. Tunggu hingga toast “File Excel berhasil dibuat” muncul. Jika library belum termuat, muat ulang halaman lalu coba lagi.</div>
+            <div class="accordion-body">Pastikan login sebagai admin dan koneksi stabil. Export dengan foto memuat library ExcelJS dari CDN, jadi butuh internet. Jika gagal, aplikasi tetap mengunduh file tanpa gambar dan menampilkan peringatan.</div>
           </div>
         </div>
       </div>

@@ -35,15 +35,22 @@ tidak dipakai.
         dom.js              escape HTML, toast, modal, tombol sibuk
         format.js           tanggal, jam, status, akun aktif
         render.js           potongan tampilan bersama
+        avatar.js           emoji/warna avatar dan render inisial
+        pagination.js       helper pembagian halaman tabel
+        achievements.js     ringkasan dan lencana kehadiran
       services/
         photo.js            kamera, kompresi, upload, hapus foto
         location.js         GPS dan tampilan lokasi
-        export.js           export Excel
+        export.js           export Excel + foto tertanam
       views/
         login.js            halaman login
-        admin.js            dashboard admin
+        admin.js            entry dashboard admin
+        admin/
+          dashboard.js      statistik, insight, daftar absensi
+          users.js          modal peserta, filter, pagination
+          settings.js       pengaturan dan export
         intern.js           dashboard intern dan absensi
-        account.js          profil dan ubah password mandiri
+        account.js          profil, avatar, pencapaian, password
         guide.js            halaman panduan penggunaan
   scripts/
     db.js                   koneksi PostgreSQL + retry
@@ -61,7 +68,8 @@ tidak dipakai.
       0007_allow_admin_clear_check_in.sql
       0008_count_only_actual_check_ins.sql
       0009_self_service_account.sql
-```
+      0010_avatar_personalization.sql
+ ```
 
 ### Aturan modularisasi
 
@@ -133,10 +141,13 @@ Migrasi `0009_self_service_account.sql` menambahkan RPC `app_update_profile`
 dan `app_change_password` agar setiap pengguna dapat mengubah nama tampilan dan
 mengganti password sendiri. Setelah password berubah, sesi di perangkat lain
 otomatis dikeluarkan.
+Migrasi `0010_avatar_personalization.sql` menambahkan kolom `avatar_emoji` dan
+`avatar_color` pada tabel `users`, RPC `app_update_avatar`, serta memperbarui
+`app_bootstrap` dan `app_export_data` agar avatar ikut tersinkron.
 Jika koneksi dari komputer tidak tersedia, buka Supabase Dashboard > SQL Editor,
 lalu jalankan isi file migrasi terbaru yang belum diterapkan secara berurutan
-(misalnya `0008_count_only_actual_check_ins.sql` lalu
-`0009_self_service_account.sql`). Setelah itu muat ulang aplikasi agar RPC baru
+(misalnya `0009_self_service_account.sql` lalu
+`0010_avatar_personalization.sql`). Setelah itu muat ulang aplikasi agar RPC baru
 terdeteksi.
 
 `0005_interns.sql` menambahkan akun peserta magang:
@@ -181,8 +192,9 @@ npm run doctor
 
 Yang diperiksa: koneksi PostgreSQL, tabel utama, bucket `attendance-photos`,
 RPC penting (`app_login`, `app_bootstrap`, `admin_reset_password`,
-`app_update_profile`, `app_change_password`), kolom password/login, daftar akun,
-serta uji login memakai `CHECK_LOGIN_*`. Status akhir harus `STATUS : OK`.
+`app_update_profile`, `app_change_password`, `app_update_avatar`), kolom
+password/login/avatar, daftar akun, serta uji login memakai `CHECK_LOGIN_*`.
+Status akhir harus `STATUS : OK`.
 
 ## 6. Menjalankan website
 
@@ -203,12 +215,12 @@ ingin memakai kamera dan GPS; browser hanya mengizinkan keduanya pada
 Alur pemakaian:
 
 1. Login dengan username dan password.
-2. Admin melihat statistik, insight kehadiran, daftar absensi, daftar peserta,
-   pengaturan, dan export Excel.
+2. Admin melihat statistik, insight kehadiran, daftar absensi berpaginasi, daftar
+   peserta dengan modal tambah/edit, pengaturan, dan export Excel berisi foto.
 3. Intern melihat status hari ini, form absen masuk/pulang, GPS, selfie, insight
-   kehadiran bulanan, dan riwayat pribadi.
-4. Semua pengguna dapat membuka menu **Akun** untuk mengubah nama dan password
-   sendiri.
+   kehadiran bulanan, riwayat pribadi, dan lencana pencapaian.
+4. Semua pengguna dapat membuka menu **Akun** untuk mengubah nama, avatar, dan
+   password sendiri.
 
 Token sesi disimpan di `localStorage` dan berlaku 12 jam. Setiap RPC mengirim
 token sebagai `p_token`; server memvalidasinya ke tabel `public.sessions`.
@@ -238,15 +250,18 @@ token sebagai `p_token`; server memvalidasinya ke tabel `public.sessions`.
    dinonaktifkan dan server juga menolak permintaan pulang lebih awal.
 4. Buka **Riwayat** untuk memeriksa catatan kehadiran milik sendiri dan melihat
    insight ketepatan waktu per bulan.
-5. Buka **Akun** untuk mengganti nama atau password. Isi password lama,
-   password baru, dan konfirmasi; indikator kekuatan password membantu memilih
-   password yang aman. Jika lupa password lama, minta admin melakukan reset.
+5. Buka **Akun** untuk mengganti nama, memilih avatar emoji/warna, melihat
+   lencana pencapaian, atau mengganti password. Isi password lama, password baru,
+   dan konfirmasi; indikator kekuatan password membantu memilih password yang
+   aman. Jika lupa password lama, minta admin melakukan reset.
 
 ### Panduan singkat admin
 
-1. Buka **Peserta** untuk membuat akun, mengubah status, atau reset password.
+1. Buka **Peserta** lalu tekan **Tambah peserta** untuk membuka modal akun.
+   Gunakan pencarian, filter role, dan pagination untuk menemukan akun; tombol
+   **Edit** membuka modal yang sama untuk memperbarui data.
 2. Buka **Absensi** untuk mencari dan memfilter catatan peserta; gunakan
-   **Export** untuk mengunduh laporan.
+   **Export** untuk mengunduh laporan Excel dengan foto masuk/pulang tertanam.
 3. Buka **Pengaturan** untuk mengatur batas telat masuk, jam mulai absen pulang,
    zona waktu, dan lokasi/radius kantor. Jam pulang default **17:00** dan dapat
    diubah oleh admin.
@@ -277,14 +292,15 @@ token sebagai `p_token`; server memvalidasinya ke tabel `public.sessions`.
   - Statistik peserta, hadir, tepat waktu, telat, belum absen.
   - Insight harian: persentase kehadiran, rasio tepat waktu, dan jumlah peserta
     yang belum absen dalam satu kartu ringkas.
-  - Filter absensi berdasarkan pencarian, tanggal, dan status.
+  - Filter absensi berdasarkan pencarian, tanggal, dan status; tabel berpaginasi.
   - Edit status kehadiran, jam masuk, dan jam pulang; admin boleh mengosongkan
     jam masuk. Jika jam masuk dikosongkan, jam pulang ikut dikosongkan untuk
     menjaga konsistensi absensi. Perubahan dicatat di log.
-  - Tambah/edit peserta, reset password, aktif/nonaktifkan akun.
+  - Tambah/edit peserta lewat modal, reset password, aktif/nonaktifkan akun,
+    pencarian, filter role, dan pagination daftar peserta.
   - Hapus satu absensi, hapus seluruh absensi peserta, hapus akun.
   - Pengaturan nama aplikasi, batas telat, jam mulai pulang, zona waktu, kantor, radius.
-  - Export Excel (Users, Attendance, Settings, Logs).
+  - Export Excel (Absensi dengan foto tertanam, Akun, Pengaturan, Log).
 - Dashboard intern:
   - Absen masuk dan pulang.
   - Absen pulang dikunci sebelum jam yang ditetapkan dan dicek kembali oleh database.
@@ -295,6 +311,8 @@ token sebagai `p_token`; server memvalidasinya ke tabel `public.sessions`.
 - Menu **Akun** untuk semua pengguna:
   - Ringkasan akun: role, status, login terakhir, dan waktu password diubah.
   - Ubah nama tampilan.
+  - Avatar emoji + warna yang tampil di sidebar, header, dan daftar peserta.
+  - Kartu pencapaian berisi lencana dan streak kehadiran pribadi.
   - Ubah password dengan verifikasi password lama, indikator kekuatan, dan
     daftar syarat interaktif; sesi perangkat lain otomatis dikeluarkan.
 - Panduan penggunaan bawaan untuk intern dan admin.

@@ -19,6 +19,7 @@ const REQUIRED_FUNCTIONS = [
   "admin_account_info",
   "app_update_profile",
   "app_change_password",
+  "app_update_avatar",
   "require_user",
   "require_admin",
   "log_action"
@@ -143,17 +144,24 @@ async function main() {
         settings.rows[0].total
     );
 
+    const requiredUserColumns = [
+      "password",
+      "password_updated_at",
+      "last_login_at",
+      "avatar_emoji",
+      "avatar_color"
+    ];
     const columns = await client.query(
       "select column_name from information_schema.columns where table_schema = 'public' and table_name = 'users' and column_name = any($1::text[])",
-      [["password", "password_updated_at", "last_login_at"]]
+      [requiredUserColumns]
     );
     const names = new Set(columns.rows.map((row) => row.column_name));
-    const missingColumns = ["password", "password_updated_at", "last_login_at"].filter(
-      (name) => !names.has(name)
-    );
+    const missingColumns = requiredUserColumns.filter((name) => !names.has(name));
     if (missingColumns.length) {
       console.log("Kolom    : HILANG: " + missingColumns.join(", "));
       ok = false;
+    } else {
+      console.log("Kolom    : lengkap (password, login, avatar)");
     }
 
     const bucket = await client.query(
