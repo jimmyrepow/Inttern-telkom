@@ -305,6 +305,29 @@ function openUserDialog(context, userId) {
                   </div>
                 </div>
               </div>
+              <div id="${dialogId}-profile" class="mt-3 ${initialRole === "intern" ? "" : "d-none"}">
+                <hr class="my-3" />
+                <div class="small fw-semibold mb-2">Profil magang</div>
+                <div class="row g-2">
+                  <div class="col-12 col-md-6">
+                    <label class="form-label small fw-semibold" for="${dialogId}-division">Divisi</label>
+                    <input id="${dialogId}-division" class="form-control rounded-3" type="text" maxlength="80" placeholder="Contoh: Access Network" value="${editing ? esc(user.division || "") : ""}" />
+                  </div>
+                  <div class="col-12 col-md-6">
+                    <label class="form-label small fw-semibold" for="${dialogId}-mentor">Mentor</label>
+                    <input id="${dialogId}-mentor" class="form-control rounded-3" type="text" maxlength="100" placeholder="Nama pembimbing" value="${editing ? esc(user.mentor || "") : ""}" />
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label small fw-semibold" for="${dialogId}-start">Mulai magang</label>
+                    <input id="${dialogId}-start" class="form-control rounded-3" type="date" value="${editing && user.internship_start ? esc(user.internship_start) : ""}" />
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label small fw-semibold" for="${dialogId}-end">Selesai magang</label>
+                    <input id="${dialogId}-end" class="form-control rounded-3" type="date" value="${editing && user.internship_end ? esc(user.internship_end) : ""}" />
+                  </div>
+                </div>
+                <div class="form-text">Data ini tampil pada profil peserta dan laporan.</div>
+              </div>
               <div class="alert alert-danger small py-2 px-3 mt-3 mb-0 d-none" data-error role="alert" aria-live="polite"></div>
             </div>
             <div class="modal-footer border-0 pt-0">
@@ -323,6 +346,11 @@ function openUserDialog(context, userId) {
   const passwordInput = element.querySelector("#" + dialogId + "-password");
   const roleInput = element.querySelector("#" + dialogId + "-role");
   const activeInput = element.querySelector("#" + dialogId + "-active");
+  const profileBox = element.querySelector("#" + dialogId + "-profile");
+  const divisionInput = element.querySelector("#" + dialogId + "-division");
+  const mentorInput = element.querySelector("#" + dialogId + "-mentor");
+  const startInput = element.querySelector("#" + dialogId + "-start");
+  const endInput = element.querySelector("#" + dialogId + "-end");
   const submit = element.querySelector('button[type="submit"]');
   const toggle = element.querySelector("[data-toggle-password]");
   const errorBox = element.querySelector("[data-error]");
@@ -356,6 +384,9 @@ function openUserDialog(context, userId) {
     toggle.innerHTML = visible ? '<i class="bi bi-eye"></i>' : '<i class="bi bi-eye-slash"></i>';
     toggle.setAttribute("aria-label", visible ? "Lihat password" : "Sembunyikan password");
   });
+  roleInput.addEventListener("change", () => {
+    profileBox.classList.toggle("d-none", roleInput.value !== "intern");
+  });
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -366,6 +397,10 @@ function openUserDialog(context, userId) {
     const password = passwordInput.value;
     const role = roleInput.value;
     const active = activeInput.checked;
+    const division = divisionInput.value.trim();
+    const mentor = mentorInput.value.trim();
+    const internshipStart = startInput.value || "";
+    const internshipEnd = endInput.value || "";
 
     if (name.length < 2) {
       showError("Nama minimal 2 karakter.");
@@ -390,6 +425,11 @@ function openUserDialog(context, userId) {
     if (password && new TextEncoder().encode(password).length > 72) {
       showError("Password terlalu panjang (maksimal 72 byte).");
       passwordInput.focus();
+      return;
+    }
+    if (role === "intern" && internshipStart && internshipEnd && internshipEnd < internshipStart) {
+      showError("Tanggal selesai magang tidak boleh lebih awal dari tanggal mulai.");
+      endInput.focus();
       return;
     }
 
@@ -428,8 +468,30 @@ function openUserDialog(context, userId) {
             p_role: role,
             p_active: active
           });
+      let profileWarning = "";
+      if (role === "intern") {
+        const targetId = editing ? user.id : result && result.user && result.user.id;
+        if (targetId) {
+          try {
+            await rpc("admin_update_intern_profile", {
+              p_id: targetId,
+              p_division: division,
+              p_mentor: mentor,
+              p_internship_start: internshipStart || null,
+              p_internship_end: internshipEnd || null
+            });
+          } catch (profileError) {
+            profileWarning =
+              String((profileError && profileError.message) || "") ||
+              "Profil magang gagal diperbarui.";
+          }
+        }
+      }
       modal.hide();
       toast(result.message || (editing ? "Akun berhasil diperbarui." : "Akun berhasil ditambahkan."), "success");
+      if (profileWarning) {
+        toast("Akun tersimpan, tetapi profil magang gagal diperbarui: " + profileWarning, "warning");
+      }
       await context.refresh({ silent: true, force: true });
     } catch (error) {
       showError(String((error && error.message) || "Gagal menyimpan akun."));

@@ -6,9 +6,9 @@ import {
   setSessionExpiredHandler,
   isSessionExpired
 } from "./core/api.js";
-import { APP_NAME, APP_CREDITS, AUTO_REFRESH_MS } from "./core/config.js";
+import { APP_NAME, APP_CREDITS, AUTO_REFRESH_MS, PHOTO_BUCKET } from "./core/config.js";
 import { readToken, clearToken } from "./core/session.js";
-import { esc, confirmDialog } from "./lib/dom.js";
+import { esc, confirmDialog, toast } from "./lib/dom.js";
 import { renderAvatar } from "./lib/avatar.js";
 import { renderLogin } from "./views/login.js";
 import { renderAdmin, attachAdminEvents } from "./views/admin.js";
@@ -16,8 +16,20 @@ import { renderIntern, attachInternEvents } from "./views/intern.js";
 import { renderAccount, attachAccountEvents } from "./views/account.js";
 import { renderSuggestions, attachSuggestionsEvents } from "./views/suggestions.js";
 import { renderLeaderboard, attachLeaderboardEvents } from "./views/leaderboard.js";
+import { renderLeaves, attachLeavesEvents } from "./views/leaves.js";
+import {
+  renderAnnouncements,
+  attachAnnouncementsEvents
+} from "./views/announcements.js";
 import { exportData } from "./services/export.js";
-import { stopCamera } from "./services/photo.js";
+import { stopCamera, uploadPhoto } from "./services/photo.js";
+import {
+  queueSupported,
+  flushAttendanceQueue,
+  countAttendanceQueue,
+  dataUrlToBlob
+} from "./services/offline-queue.js";
+import { initTheme, toggleTheme, currentTheme } from "./lib/theme.js";
 
 const app = document.getElementById("app");
 const MOBILE_BREAKPOINT = 992;
@@ -25,8 +37,12 @@ const MOBILE_BREAKPOINT = 992;
 const NAV = {
   admin: [
     { id: "attendance", label: "Absensi", icon: "bi-calendar2-check" },
+    { id: "approvals", label: "Persetujuan", icon: "bi-check2-square" },
+    { id: "announcements", label: "Pengumuman", icon: "bi-megaphone" },
+    { id: "analytics", label: "Analitik", icon: "bi-graph-up-arrow" },
     { id: "leaderboard", label: "Peringkat", icon: "bi-trophy" },
     { id: "users", label: "Peserta", icon: "bi-people" },
+    { id: "logs", label: "Log Audit", icon: "bi-journal-text" },
     { id: "settings", label: "Pengaturan", icon: "bi-sliders" },
     { id: "suggestions", label: "Kotak Saran", icon: "bi-chat-square-text" },
     { id: "account", label: "Akun", icon: "bi-person-gear" },
@@ -35,6 +51,8 @@ const NAV = {
   intern: [
     { id: "absen", label: "Absen Hari Ini", icon: "bi-fingerprint" },
     { id: "riwayat", label: "Riwayat", icon: "bi-clock-history" },
+    { id: "leaves", label: "Izin & Koreksi", icon: "bi-calendar2-heart" },
+    { id: "announcements", label: "Pengumuman", icon: "bi-megaphone" },
     { id: "leaderboard", label: "Peringkat", icon: "bi-trophy" },
     { id: "suggestions", label: "Kotak Saran", icon: "bi-chat-square-text" },
     { id: "account", label: "Akun", icon: "bi-person-gear" },
@@ -45,8 +63,12 @@ const NAV = {
 const PAGE_META = {
   admin: {
     attendance: { title: "Absensi", subtitle: "Pantau kehadiran peserta hari ini" },
+    approvals: { title: "Persetujuan", subtitle: "Tinjau izin, sakit, cuti, dan koreksi absensi" },
+    announcements: { title: "Pengumuman", subtitle: "Kelola informasi dan agenda untuk peserta" },
+    analytics: { title: "Analitik", subtitle: "Tren kehadiran dan rekap kinerja peserta" },
     leaderboard: { title: "Peringkat", subtitle: "Klasemen kehadiran peserta magang" },
-    users: { title: "Peserta", subtitle: "Kelola akun, role, dan password" },
+    users: { title: "Peserta", subtitle: "Kelola akun, role, profil magang, dan password" },
+    logs: { title: "Log Audit", subtitle: "Riwayat aktivitas sistem dengan filter" },
     settings: { title: "Pengaturan", subtitle: "Atur jam masuk, zona waktu, dan lokasi kantor" },
     suggestions: { title: "Kotak Saran", subtitle: "Baca dan tindak lanjuti masukan peserta" },
     account: { title: "Akun Saya", subtitle: "Ubah nama dan password akun Anda" },
@@ -55,6 +77,8 @@ const PAGE_META = {
   intern: {
     absen: { title: "Absen Hari Ini", subtitle: "Catat kehadiran dengan GPS dan selfie" },
     riwayat: { title: "Riwayat", subtitle: "Semua absensi pribadi Anda" },
+    leaves: { title: "Izin & Koreksi", subtitle: "Ajukan izin, sakit, cuti, atau koreksi absensi" },
+    announcements: { title: "Pengumuman", subtitle: "Informasi dan agenda terbaru dari admin" },
     leaderboard: { title: "Peringkat", subtitle: "Klasemen kehadiran peserta magang" },
     suggestions: { title: "Kotak Saran", subtitle: "Kirim masukan dan lihat balasan admin" },
     account: { title: "Akun Saya", subtitle: "Ubah nama dan password akun Anda" },
@@ -141,6 +165,9 @@ function applyBootstrap(data) {
   state.user = data.user || state.user;
   state.users = Array.isArray(data.users) ? data.users : [];
   state.attendance = Array.isArray(data.attendance) ? data.attendance : [];
+  state.leaves = Array.isArray(data.leaves) ? data.leaves : [];
+  state.corrections = Array.isArray(data.corrections) ? data.corrections : [];
+  state.announcements = Array.isArray(data.announcements) ? data.announcements : [];
   state.settings = data.settings || {};
   state.stats = data.stats || null;
   state.lastSyncAt = data.serverTime || "";
@@ -164,6 +191,7 @@ async function loadDashboard() {
     state.ui.tab = roleKey() === "admin" ? "attendance" : "absen";
     renderDashboard();
     startAutoRefresh();
+    refreshQueueCount().then(flushOfflineAttendance);
   } catch (error) {
     if (isSessionExpired(error.message)) {
       state.token = "";
@@ -223,7 +251,12 @@ function canAutoRefresh() {
     state.ui.tab === "suggestions" ||
     state.ui.tab === "leaderboard" ||
     state.ui.tab === "guide" ||
-    state.ui.tab === "account"
+    state.ui.tab === "account" ||
+    state.ui.tab === "leaves" ||
+    state.ui.tab === "announcements" ||
+    state.ui.tab === "approvals" ||
+    state.ui.tab === "analytics" ||
+    state.ui.tab === "logs"
   )
     return false;
   const active = document.activeElement;
@@ -336,9 +369,17 @@ function renderHeader(role, isAdmin) {
         <p>${esc(meta.subtitle)}</p>
       </div>
       <div class="header-actions">
+        <span class="connectivity-pill ${state.online ? "is-online" : "is-offline"} ${!state.online || state.offlineQueueCount ? "" : "d-none"}" id="connectivity-pill" role="status" aria-live="polite">
+          <i class="bi ${state.online ? "bi-wifi" : "bi-wifi-off"}" id="connectivity-icon" aria-hidden="true"></i>
+          <span id="connectivity-label">${state.online ? "Online" : "Offline"}</span>
+          <span class="connectivity-count ${state.offlineQueueCount ? "" : "d-none"}" id="connectivity-count" title="Absensi menunggu sinkronisasi">${state.offlineQueueCount}</span>
+        </span>
         <span class="sync-status ${state.syncError ? "is-error" : ""}" title="${esc(state.syncError || "Terhubung ke server")}" aria-label="${syncLabel}">
           <span class="sync-dot"></span>
         </span>
+        <button class="header-icon-btn" id="theme-toggle" type="button" aria-label="Ganti mode gelap atau terang" title="${currentTheme() === "dark" ? "Mode terang" : "Mode gelap"}">
+          <i class="bi ${currentTheme() === "dark" ? "bi-sun" : "bi-moon-stars"}"></i>
+        </button>
         ${isAdmin ? '<button class="header-icon-btn d-none d-lg-inline-flex" id="export-btn" type="button" aria-label="Export Excel" title="Export Excel"><i class="bi bi-download"></i></button>' : ""}
         <div class="dropdown">
           <button class="user-chip" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Menu akun">
@@ -409,18 +450,25 @@ function renderDashboard() {
   const isAccount = state.ui.tab === "account";
   const isSuggestions = state.ui.tab === "suggestions";
   const isLeaderboard = state.ui.tab === "leaderboard";
+  const isAnnouncements = state.ui.tab === "announcements";
+  const isLeaves = state.ui.tab === "leaves";
   const content = isAccount
     ? renderAccount()
     : isSuggestions
       ? renderSuggestions()
       : isLeaderboard
         ? renderLeaderboard()
-        : isAdmin
-          ? renderAdmin()
-          : renderIntern();
+        : isAnnouncements
+          ? renderAnnouncements()
+          : isLeaves
+            ? renderLeaves()
+            : isAdmin
+              ? renderAdmin()
+              : renderIntern();
 
   app.innerHTML = `
     <div class="app-shell ${state.ui.sidebarOpen ? "sidebar-open" : ""}" id="app-shell">
+      <a class="skip-link" href="#app-content">Lewati ke konten utama</a>
       ${renderSidebar(role)}
       <div class="app-main">
         ${renderHeader(role, isAdmin)}
@@ -444,8 +492,13 @@ function renderDashboard() {
     attachSuggestionsEvents({ rerender: renderDashboard, refresh: refreshData });
   else if (isLeaderboard)
     attachLeaderboardEvents({ rerender: renderDashboard, refresh: refreshData });
+  else if (isAnnouncements)
+    attachAnnouncementsEvents({ rerender: renderDashboard, refresh: refreshData });
+  else if (isLeaves)
+    attachLeavesEvents({ rerender: renderDashboard, refresh: refreshData });
   else if (isAdmin) attachAdminEvents({ rerender: renderDashboard, refresh: refreshData });
   else attachInternEvents({ rerender: renderDashboard, refresh: refreshData });
+  updateConnectivityUi();
 }
 
 function attachHeaderEvents() {
@@ -455,6 +508,136 @@ function attachHeaderEvents() {
   if (exportBtn) exportBtn.addEventListener("click", () => exportData(exportBtn));
   const exportMenu = document.getElementById("menu-export");
   if (exportMenu) exportMenu.addEventListener("click", () => exportData(exportMenu));
+  const themeButton = document.getElementById("theme-toggle");
+  if (themeButton) {
+    themeButton.addEventListener("click", () => {
+      const theme = toggleTheme();
+      themeButton.innerHTML =
+        '<i class="bi ' + (theme === "dark" ? "bi-sun" : "bi-moon-stars") + '"></i>';
+      themeButton.title = theme === "dark" ? "Mode terang" : "Mode gelap";
+    });
+  }
+}
+
+function updateConnectivityUi() {
+  state.online = navigator.onLine !== false;
+  const pill = document.getElementById("connectivity-pill");
+  if (!pill) return;
+  const pending = Number(state.offlineQueueCount) || 0;
+  const label = document.getElementById("connectivity-label");
+  const icon = document.getElementById("connectivity-icon");
+  const count = document.getElementById("connectivity-count");
+  pill.classList.toggle("d-none", state.online && !pending);
+  pill.classList.toggle("is-online", state.online);
+  pill.classList.toggle("is-offline", !state.online);
+  if (label) {
+    label.textContent = state.online
+      ? pending
+        ? "Menunggu sinkron"
+        : "Online"
+      : "Offline";
+  }
+  if (icon) icon.className = "bi " + (state.online ? "bi-wifi" : "bi-wifi-off");
+  if (count) {
+    count.textContent = String(pending);
+    count.classList.toggle("d-none", !pending);
+  }
+  pill.title = !state.online
+    ? "Koneksi terputus. Absensi akan disimpan di perangkat."
+    : pending
+      ? pending + " absensi menunggu sinkronisasi"
+      : "Terhubung ke internet";
+}
+
+async function refreshQueueCount() {
+  if (!state.user || !queueSupported()) {
+    state.offlineQueueCount = 0;
+    updateConnectivityUi();
+    return;
+  }
+  try {
+    state.offlineQueueCount = await countAttendanceQueue(state.user.id);
+  } catch (error) {
+    state.offlineQueueCount = 0;
+  }
+  updateConnectivityUi();
+}
+
+async function flushOfflineAttendance() {
+  if (
+    !state.token ||
+    !state.user ||
+    !queueSupported() ||
+    navigator.onLine === false ||
+    state.offlineFlushing
+  )
+    return;
+  state.offlineFlushing = true;
+  try {
+    const result = await flushAttendanceQueue(
+      async (item) => {
+        const blob = await dataUrlToBlob(item.photo_data_url);
+        const uploaded = await uploadPhoto(
+          blob,
+          item.type === "check-out" ? "pulang" : "masuk"
+        );
+        try {
+          await rpc(item.type === "check-in" ? "app_check_in" : "app_check_out", {
+            p_location: item.location,
+            p_note: item.note || "",
+            p_photo_url: uploaded.url,
+            p_latitude: item.latitude,
+            p_longitude: item.longitude,
+            p_accuracy: item.accuracy
+          });
+        } catch (error) {
+          try {
+            await sb.storage.from(PHOTO_BUCKET).remove([uploaded.path]);
+          } catch (removeError) {}
+          throw error;
+        }
+      },
+      {
+        userId: state.user.id,
+        onError: (error) => {
+          state.syncError = (error && error.message) || "Sinkronisasi tertunda.";
+        }
+      }
+    );
+    if (result.synced) {
+      toast(
+        result.synced + " absensi offline berhasil disinkronkan ke server.",
+        "success"
+      );
+      await refreshData({ silent: true, force: true });
+    }
+  } catch (error) {
+    state.syncError = (error && error.message) || "Sinkronisasi tertunda.";
+  } finally {
+    state.offlineFlushing = false;
+    await refreshQueueCount();
+  }
+}
+
+let connectivityBound = false;
+
+function bindConnectivity() {
+  if (connectivityBound) return;
+  window.addEventListener("online", () => {
+    updateConnectivityUi();
+    refreshQueueCount().then(flushOfflineAttendance);
+  });
+  window.addEventListener("offline", updateConnectivityUi);
+  document.addEventListener("offline-queue:changed", () => {
+    refreshQueueCount();
+  });
+  connectivityBound = true;
+}
+
+function registerServiceWorker() {
+  if (!("serviceWorker" in navigator)) return;
+  if (!/^https?:$/.test(window.location.protocol)) return;
+  navigator.serviceWorker.register("sw.js").catch(() => {});
 }
 
 function attachShellEvents() {
@@ -487,6 +670,9 @@ function attachShellEvents() {
 }
 
 async function init() {
+  initTheme();
+  registerServiceWorker();
+  bindConnectivity();
   if (!configured) {
     renderConfigError();
     return;

@@ -21,6 +21,12 @@ import {
 } from "../services/location.js";
 import { renderGuide } from "./guide.js";
 import { getGeofence, geofenceReason, formatDistance } from "../services/geofence.js";
+import {
+  enqueueAttendance,
+  isNetworkError,
+  queueSupported,
+  blobToDataUrl
+} from "../services/offline-queue.js";
 
 function checkoutTimeReached(limit, timezone) {
   if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(limit)) return false;
@@ -682,7 +688,37 @@ async function handleAttendanceSubmit(type, button, refresh) {
         await sb.storage.from(PHOTO_BUCKET).remove([uploadedPath]);
       } catch (removeError) {}
     }
-    handleError(error);
+    if (isNetworkError(error) && queueSupported() && state.selfieBlob) {
+      try {
+        const photoDataUrl = await blobToDataUrl(state.selfieBlob);
+        await enqueueAttendance({
+          user_id: user.id,
+          username: user.username,
+          type,
+          date: snapshot.today,
+          location: state.currentLocation,
+          note: state.note || "",
+          latitude: state.currentLat,
+          longitude: state.currentLng,
+          accuracy: state.locationAccuracy,
+          photo_data_url: photoDataUrl
+        });
+        document.dispatchEvent(new CustomEvent("offline-queue:changed"));
+        toast(
+          "Koneksi terputus. Absensi disimpan di perangkat dan akan dikirim otomatis saat online.",
+          "warning"
+        );
+        state.note = "";
+        state.selfieData = "";
+        state.selfieBlob = null;
+        stopCamera();
+        await refresh({ silent: true, force: true });
+      } catch (queueError) {
+        handleError(error);
+      }
+    } else {
+      handleError(error);
+    }
   } finally {
     state.attendanceSubmitting = false;
     restore();

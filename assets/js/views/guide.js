@@ -136,7 +136,7 @@ export function renderGuide(role) {
         <section class="guide-card">
           <h3><span class="guide-icon"><i class="bi bi-person-badge"></i></span> Avatar dan pencapaian</h3>
           <p>Buka menu <strong>Akun</strong>, lalu tekan <em>Ubah avatar</em> untuk memilih emoji dan warna. Avatar tampil di menu, header, dan daftar peserta admin.</p>
-          <p class="mb-0">Kartu <strong>Pencapaian saya</strong> menampilkan lencana yang terbuka dari kebiasaan absen: langkah pertama, tepat waktu, rajin, disiplin bulan ini, dan streak. Lencana terbuka otomatis saat target tercapai.</p>
+          <p class="mb-0">Kartu pencapaian menyesuaikan role. Peserta magang membuka lencana dari kebiasaan absen: langkah pertama, tepat waktu, rajin, disiplin bulan ini, dan streak. Admin memiliki lencana aktivitas sendiri: meninjau pengajuan, menyetujui izin/koreksi, dan menerbitkan pengumuman. Lencana terbuka otomatis saat target tercapai.</p>
         </section>
 
         <section class="guide-card">

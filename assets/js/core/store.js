@@ -23,6 +23,24 @@ export const state = {
   locationError: "",
   locationAt: 0,
   attendanceSubmitting: false,
+  leaves: [],
+  corrections: [],
+  announcements: [],
+  adminAnnouncements: [],
+  announcementsLoadedFor: "",
+  announcementsLoading: false,
+  announcementsError: "",
+  adminAchievements: null,
+  adminAchievementsLoading: false,
+  adminAchievementsError: "",
+  adminAchievementsLoadedFor: "",
+  logs: [],
+  logsTotal: 0,
+  logsLoading: false,
+  logsError: "",
+  logsLoadedKey: "",
+  offlineQueueCount: 0,
+  online: typeof navigator === "undefined" ? true : navigator.onLine !== false,
   suggestions: [],
   suggestionSummary: null,
   suggestionLoading: false,
@@ -50,9 +68,28 @@ export const state = {
     suggestionSearch: "",
     suggestionPage: 1,
     leaderboardMonth: "",
+    approvalKind: "leave",
+    approvalStatus: "pending",
+    approvalSearch: "",
+    approvalPage: 1,
+    announcementSearch: "",
+    announcementStatus: "",
+    announcementPage: 1,
+    logAction: "",
+    logSearch: "",
+    logPage: 1,
+    analyticsMonth: "",
+    leavesTab: "izin",
     sidebarOpen: false
   }
 };
+
+export function invalidateAdminAchievements() {
+  state.adminAchievements = null;
+  state.adminAchievementsLoading = false;
+  state.adminAchievementsError = "";
+  state.adminAchievementsLoadedFor = "";
+}
 
 export function resetSessionState() {
   state.token = "";
@@ -76,6 +113,23 @@ export function resetSessionState() {
   state.locationError = "";
   state.locationAt = 0;
   state.attendanceSubmitting = false;
+  state.leaves = [];
+  state.corrections = [];
+  state.announcements = [];
+  state.adminAnnouncements = [];
+  state.announcementsLoadedFor = "";
+  state.announcementsLoading = false;
+  state.announcementsError = "";
+  state.adminAchievements = null;
+  state.adminAchievementsLoading = false;
+  state.adminAchievementsError = "";
+  state.adminAchievementsLoadedFor = "";
+  state.logs = [];
+  state.logsTotal = 0;
+  state.logsLoading = false;
+  state.logsError = "";
+  state.logsLoadedKey = "";
+  state.offlineQueueCount = 0;
   state.suggestions = [];
   state.suggestionSummary = null;
   state.suggestionLoading = false;
@@ -102,5 +156,17 @@ export function resetSessionState() {
   state.ui.suggestionSearch = "";
   state.ui.suggestionPage = 1;
   state.ui.leaderboardMonth = "";
+  state.ui.approvalKind = "leave";
+  state.ui.approvalStatus = "pending";
+  state.ui.approvalSearch = "";
+  state.ui.approvalPage = 1;
+  state.ui.announcementSearch = "";
+  state.ui.announcementStatus = "";
+  state.ui.announcementPage = 1;
+  state.ui.logAction = "";
+  state.ui.logSearch = "";
+  state.ui.logPage = 1;
+  state.ui.analyticsMonth = "";
+  state.ui.leavesTab = "izin";
   state.ui.sidebarOpen = false;
 }

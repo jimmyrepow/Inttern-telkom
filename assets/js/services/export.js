@@ -226,6 +226,10 @@ function buildUserRows(users) {
     Status: user.active === false ? "Nonaktif" : "Aktif",
     "Avatar emoji": user.avatar_emoji || "",
     "Warna avatar": user.avatar_color || "",
+    Divisi: user.division || "",
+    Mentor: user.mentor || "",
+    "Mulai magang": user.internship_start || "",
+    "Selesai magang": user.internship_end || "",
     "Login terakhir": formatDateTime(user.last_login_at),
     "Password diubah": formatDateTime(user.password_updated_at),
     "Dibuat": formatDateTime(user.created_at)
@@ -239,6 +243,48 @@ function buildSettingsRows(settings) {
       settings[key] === null || settings[key] === undefined
         ? ""
         : String(settings[key])
+  }));
+}
+
+function buildLeaveRows(leaves) {
+  return (leaves || []).map((row) => ({
+    Pemohon: row.name || "",
+    Username: row.username || "",
+    Jenis: row.type || "",
+    Mulai: row.start_date || "",
+    Selesai: row.end_date || "",
+    Alasan: row.reason || "",
+    Status: row.status || "",
+    "Catatan admin": row.admin_note || "",
+    "Direview oleh": row.reviewed_by || "",
+    "Direview pada": formatDateTime(row.reviewed_at)
+  }));
+}
+
+function buildCorrectionRows(corrections) {
+  return (corrections || []).map((row) => ({
+    Peserta: row.name || "",
+    Username: row.username || "",
+    Tanggal: row.date || "",
+    "Jam masuk diminta": shortTime(row.requested_check_in),
+    "Jam pulang diminta": shortTime(row.requested_check_out),
+    Alasan: row.reason || "",
+    Status: row.status || "",
+    "Catatan admin": row.admin_note || "",
+    "Direview oleh": row.reviewed_by || "",
+    "Direview pada": formatDateTime(row.reviewed_at)
+  }));
+}
+
+function buildAnnouncementRows(announcements) {
+  return (announcements || []).map((row) => ({
+    Judul: row.title || "",
+    Isi: row.body || "",
+    Kategori: row.category || "",
+    "Tanggal kegiatan": row.event_date || "",
+    Aktif: row.active === false ? "Tidak" : "Ya",
+    "Dibuat oleh": row.created_by || "",
+    Dibuat: formatDateTime(row.created_at)
   }));
 }
 
@@ -267,6 +313,13 @@ async function exportWithExcelJs(data, statusElement) {
 
   setStatus(statusElement, "Menyiapkan akun, pengaturan, dan log...");
   addSimpleSheet(workbook, "Akun", buildUserRows(data.users));
+  addSimpleSheet(workbook, "Izin", buildLeaveRows(data.leaves));
+  addSimpleSheet(workbook, "Koreksi", buildCorrectionRows(data.corrections));
+  addSimpleSheet(
+    workbook,
+    "Pengumuman",
+    buildAnnouncementRows(data.announcements)
+  );
   addSimpleSheet(workbook, "Pengaturan", buildSettingsRows(data.settings));
   addSimpleSheet(workbook, "Log", data.logs);
 
@@ -293,6 +346,21 @@ function exportWithXlsxFallback(data) {
     workbook,
     XLSX.utils.json_to_sheet(data.attendance || []),
     "Absensi"
+  );
+  XLSX.utils.book_append_sheet(
+    workbook,
+    XLSX.utils.json_to_sheet(buildLeaveRows(data.leaves)),
+    "Izin"
+  );
+  XLSX.utils.book_append_sheet(
+    workbook,
+    XLSX.utils.json_to_sheet(buildCorrectionRows(data.corrections)),
+    "Koreksi"
+  );
+  XLSX.utils.book_append_sheet(
+    workbook,
+    XLSX.utils.json_to_sheet(buildAnnouncementRows(data.announcements)),
+    "Pengumuman"
   );
   XLSX.utils.book_append_sheet(
     workbook,

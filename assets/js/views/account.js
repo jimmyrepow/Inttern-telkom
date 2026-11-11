@@ -1,5 +1,5 @@
 import { state } from "../core/store.js";
-import { rpc, handleError } from "../core/api.js";
+import { rpc, handleError, isSessionExpired } from "../core/api.js";
 import { esc, toast, withBusy, createModal, confirmDialog } from "../lib/dom.js";
 import { formatDateTime, isActiveUser } from "../lib/format.js";
 import {
@@ -9,7 +9,10 @@ import {
   AVATAR_EMOJIS,
   AVATAR_COLORS
 } from "../lib/avatar.js";
-import { renderAchievementsCard } from "../lib/achievements.js";
+import {
+  renderAchievementsCard,
+  renderAdminAchievementsCard
+} from "../lib/achievements.js";
 
 const STRENGTH_LABELS = [
   "",
@@ -46,6 +49,12 @@ export function renderAccount() {
   const myAttendance = (state.attendance || []).filter(
     (row) => String(row.user_id) === String(user.id)
   );
+  const achievementsCard = admin
+    ? renderAdminAchievementsCard(state.adminAchievements, {
+        loading: state.adminAchievementsLoading,
+        error: state.adminAchievementsError
+      })
+    : renderAchievementsCard(myAttendance);
 
   return `
     <section class="account-hero">
@@ -194,7 +203,7 @@ export function renderAccount() {
         </div>
       </div>
     </div>
-    ${renderAchievementsCard(myAttendance)}
+    ${achievementsCard}
   `;
 }
 
@@ -204,11 +213,62 @@ export function attachAccountEvents(context) {
   bindProfileForm(ctx);
   bindPasswordForm(ctx);
   bindAvatarDialog(ctx);
+  bindAdminAchievements(ctx);
 
   const logoutBtn = document.getElementById("acct-logout");
   if (logoutBtn && typeof ctx.logout === "function") {
     logoutBtn.addEventListener("click", () => ctx.logout());
   }
+}
+
+function bindAdminAchievements(context) {
+  const user = state.user || {};
+  if (String(user.role || "").toLowerCase() !== "admin") return;
+
+  const retry = document.getElementById("admin-achievements-retry");
+  if (retry) {
+    retry.addEventListener("click", () => {
+      state.adminAchievementsLoadedFor = "";
+      state.adminAchievementsError = "";
+      if (typeof context.rerender === "function") context.rerender();
+    });
+  }
+
+  loadAdminAchievements(context);
+}
+
+function loadAdminAchievements(context) {
+  const user = state.user || {};
+  const key = String(user.username || user.id || "");
+  if (!key) return;
+  if (state.adminAchievementsLoading || state.adminAchievementsLoadedFor === key) return;
+
+  state.adminAchievementsLoading = true;
+  state.adminAchievementsError = "";
+  rpc("app_admin_achievement_stats", {})
+    .then((result) => {
+      const stats = result && result.stats;
+      state.adminAchievements =
+        stats && typeof stats === "object"
+          ? stats
+          : { reviews: 0, approved: 0, announcements: 0, actions: 0, activeDays: 0 };
+      state.adminAchievementsLoadedFor = key;
+    })
+    .catch((error) => {
+      if (isSessionExpired(error && error.message)) {
+        state.adminAchievementsLoadedFor = key;
+        handleError(error);
+        return;
+      }
+      state.adminAchievements = null;
+      state.adminAchievementsError =
+        (error && error.message) || "Gagal memuat pencapaian admin.";
+      state.adminAchievementsLoadedFor = key;
+    })
+    .finally(() => {
+      state.adminAchievementsLoading = false;
+      if (typeof context.rerender === "function") context.rerender();
+    });
 }
 
 function bindAvatarDialog(context) {

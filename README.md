@@ -14,6 +14,7 @@ tidak dipakai.
 ```
 /
   index.html                halaman utama
+  sw.js                     service worker PWA (cache aset + offline)
   server.js                 server statis lokal
   run.bat                   jalankan website sekali klik
   migrate.bat               install + migrasi + seed + pemeriksaan
@@ -45,20 +46,29 @@ tidak dipakai.
         avatar.js           emoji/warna avatar dan render inisial
         action-menu.js      menu titik-tiga untuk aksi tabel
         pagination.js       helper pembagian halaman tabel
-        achievements.js     ringkasan dan lencana kehadiran
+        achievements.js     ringkasan dan lencana kehadiran peserta + aktivitas admin
+        theme.js            mode terang/gelap + preferensi sistem
+        charts.js           grafik batang dan proporsi berbasis CSS
       services/
         photo.js            kamera, kompresi, upload, hapus foto
         location.js         GPS dan tampilan lokasi
         geofence.js         validasi radius dan akurasi GPS
         export.js           export Excel + foto tertanam
+        offline-queue.js    antrean absensi offline (IndexedDB)
+        pdf.js              laporan PDF lewat dialog cetak browser
       views/
         login.js            halaman login
         admin.js            entry dashboard admin
         admin/
           dashboard.js      statistik, insight, daftar absensi
-          users.js          modal peserta, filter, pagination
+          users.js          modal peserta, profil magang, filter
           settings.js       pengaturan dan export
+          approvals.js      persetujuan izin dan koreksi absensi
+          logs.js           log audit dengan filter dan PDF
         intern.js           dashboard intern dan absensi
+        leaves.js           pengajuan izin/sakit/cuti dan koreksi
+        announcements.js    pengumuman & agenda admin/peserta
+        analytics.js        analitik tren kehadiran
         leaderboard.js      peringkat kehadiran admin dan peserta
         suggestions.js      kotak saran admin dan peserta
         account.js          profil, avatar, pencapaian, password
@@ -83,7 +93,9 @@ tidak dipakai.
       0011_suggestion_box.sql
       0012_geofence_attendance.sql
       0013_attendance_leaderboard.sql
- ```
+      0014_leave_correction_announcement.sql
+      0015_admin_achievements.sql
+  ```
 
 ### Aturan modularisasi
 
@@ -165,6 +177,13 @@ menambahkan setting `max_accuracy_m`, dan menegakkan radius kantor serta akurasi
 GPS langsung di RPC absen.
 Migrasi `0013_attendance_leaderboard.sql` menambahkan RPC `app_leaderboard` untuk
 klasemen kehadiran per bulan atau semua waktu.
+Migrasi `0014_leave_correction_announcement.sql` menambahkan tabel `leave_requests`,
+`attendance_corrections`, dan `announcements`; kolom profil magang pada `users`;
+RPC pengajuan/persetujuan izin dan koreksi, pengumuman, profil magang, serta log
+audit terfilter. `app_bootstrap` dan `app_export_data` ikut diperbarui.
+Migrasi `0015_admin_achievements.sql` menambahkan RPC `app_admin_achievement_stats`
+untuk menghitung statistik pencapaian admin: jumlah peninjauan, persetujuan,
+pengumuman yang diterbitkan, aksi, dan hari aktif.
 Jika koneksi dari komputer tidak tersedia, buka Supabase Dashboard > SQL Editor,
 lalu jalankan isi file migrasi terbaru yang belum diterapkan secara berurutan.
 Setelah itu muat ulang aplikasi agar RPC baru terdeteksi.
@@ -212,7 +231,7 @@ npm run doctor
 Yang diperiksa: koneksi PostgreSQL, tabel utama, bucket `attendance-photos`,
 RPC penting (`app_login`, `app_bootstrap`, `app_check_in`, `app_check_out`,
 `app_leaderboard`, `admin_reset_password`, `app_update_profile`,
-`app_change_password`, `app_update_avatar`), kolom password/login/avatar,
+`app_change_password`, `app_update_avatar`, `app_admin_achievement_stats`), kolom password/login/avatar,
 kolom geofence absensi, setting akurasi GPS, daftar akun, serta uji login memakai
 `CHECK_LOGIN_*`. Status akhir harus `STATUS : OK`.
 
@@ -325,20 +344,31 @@ token sebagai `p_token`; server memvalidasinya ke tabel `public.sessions`.
     jam masuk. Jika jam masuk dikosongkan, jam pulang ikut dikosongkan untuk
     menjaga konsistensi absensi. Perubahan dicatat di log.
   - Tambah/edit peserta lewat modal, reset password, aktif/nonaktifkan akun,
-    pencarian, filter role, dan pagination daftar peserta.
+    pencarian, filter role, dan pagination daftar peserta. Modal juga mengelola
+    profil magang: divisi, mentor, tanggal mulai, dan tanggal selesai.
+  - Persetujuan izin/sakit/cuti dan koreksi absensi dengan catatan admin.
+  - Pengumuman dan agenda (info, penting, agenda) dengan status aktif/nonaktif.
+  - Analitik tren: kehadiran harian, proporsi tepat waktu, tren enam bulan,
+    rekap per peserta, serta ekspor laporan PDF.
+  - Log audit dengan filter aksi/pencarian dan ekspor laporan PDF.
   - Hapus satu absensi, hapus seluruh absensi peserta, hapus akun.
   - Pengaturan nama aplikasi, batas telat, jam mulai pulang, zona waktu, kantor,
     radius, dan akurasi GPS maksimal.
   - Peringkat kehadiran per bulan atau semua waktu dengan poin hadir, tepat waktu,
     dan pulang lengkap.
   - Kotak saran: ringkasan status, pencarian, filter, balasan admin, dan hapus.
-  - Export Excel (Absensi dengan foto tertanam, Akun, Pengaturan, Log).
+  - Export Excel (Absensi dengan foto tertanam, Akun, Izin, Koreksi, Pengumuman,
+    Pengaturan, Log).
 - Dashboard intern:
   - Absen masuk dan pulang.
   - Absen pulang dikunci sebelum jam yang ditetapkan dan dicek kembali oleh database.
   - Ambil GPS dan tampilkan akurasi.
   - Kamera browser atau upload foto; foto dikompres ke JPEG.
+  - Jika koneksi terputus saat absen, data disimpan di IndexedDB dan dikirim
+    otomatis saat kembali online.
   - Riwayat absensi pribadi di halaman terpisah.
+  - Pengajuan izin, sakit, cuti, dan koreksi absensi dengan riwayat status.
+  - Pengumuman dan agenda terbaru dari admin.
   - Insight kehadiran per bulan dan filter bulan pada riwayat.
   - Peringkat kehadiran peserta dengan penanda posisi sendiri.
   - Kotak saran dengan kategori, status, dan balasan admin.
@@ -346,12 +376,17 @@ token sebagai `p_token`; server memvalidasinya ke tabel `public.sessions`.
   - Ringkasan akun: role, status, login terakhir, dan waktu password diubah.
   - Ubah nama tampilan.
   - Avatar emoji + warna yang tampil di sidebar, header, dan daftar peserta.
-  - Kartu pencapaian berisi lencana dan streak kehadiran pribadi.
+  - Kartu pencapaian berisi lencana dan streak kehadiran pribadi untuk peserta,
+    serta lencana aktivitas peninjauan/pengumuman untuk admin.
   - Ubah password dengan verifikasi password lama, indikator kekuatan, dan
     daftar syarat interaktif; sesi perangkat lain otomatis dikeluarkan.
 - Panduan penggunaan bawaan untuk intern dan admin.
 - Credit aplikasi tampil di halaman login dan footer dashboard.
 - Auto-refresh data setiap 30 detik saat tab aktif.
+- Mode gelap/terang tersimpan di perangkat dan mengikuti preferensi sistem.
+- PWA: service worker menyimpan aset agar aplikasi tetap terbuka saat offline;
+  indikator koneksi dan jumlah absensi yang menunggu sinkron tampil di header.
+- Aksesibilitas: skip link, fokus terlihat, label ARIA pada grafik dan tombol aksi.
 - Tampilan responsif mobile, tablet, dan desktop dengan tema pink TELKOM AKSES.
 
 ## 10. Update data dan kode
