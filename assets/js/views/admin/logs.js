@@ -75,25 +75,30 @@ const SETTING_LABELS = {
   max_accuracy_m: "Akurasi GPS maksimal"
 };
 
+function normalizeAction(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_]+/g, "-");
+}
+
 function actionLabel(value) {
-  const action = String(value || "");
-  const label = ACTION_LABELS[action] || action || "-";
-  return label
-    .replace(/-/g, " ")
-    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+  const action = normalizeAction(value);
+  return ACTION_LABELS[action] || (action ? action.replace(/-/g, " ") : "-");
 }
 
 function formatDetail(row) {
   const detail = String(row.detail || "").trim();
   if (!detail) return "-";
 
-  if (row.action === "update-avatar") {
+  const action = normalizeAction(row.action);
+  if (action === "update-avatar") {
     return detail === "inisial"
       ? "Avatar profil dikembalikan ke inisial."
       : "Avatar profil diperbarui menjadi " + detail + ".";
   }
 
-  if (row.action !== "update-settings") return detail;
+  if (action !== "update-settings") return detail;
 
   let settings;
   try {
@@ -115,7 +120,7 @@ function formatDetail(row) {
 }
 
 function actionTone(action) {
-  const value = String(action || "");
+  const value = normalizeAction(action);
   if (/delete|reject|logout/.test(value)) return "is-danger";
   if (/create|approve|check-in/.test(value)) return "is-success";
   if (/update|edit|reset|review/.test(value)) return "is-warning";
