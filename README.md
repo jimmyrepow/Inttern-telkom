@@ -23,7 +23,12 @@ tidak dipakai.
   .env.example              contoh kredensial
   assets/
     css/styles.css
-    favicon.svg             ikon tab browser
+    favicon.ico             ikon tab browser (multi-size)
+    favicon-32.png          ikon tab browser 32 px
+    favicon-192.png         ikon PWA 192 px
+    favicon-512.png         ikon PWA 512 px
+    apple-touch-icon.png    ikon iOS 180 px
+    site.webmanifest        metadata nama dan ikon PWA
     logo.png                logo Telkom Akses (login, sidebar, error config)
     js/
       config.js             URL + publishable key Supabase

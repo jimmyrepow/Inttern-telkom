@@ -1,6 +1,6 @@
 import { state } from "../core/store.js";
 import { rpc, handleError } from "../core/api.js";
-import { toast, withBusy } from "../lib/dom.js";
+import { toast, withBusy, confirmDialog } from "../lib/dom.js";
 import { getTodayDate, shortTime, formatDateTime } from "../lib/format.js";
 
 const EXCELJS_URL = "https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js";
@@ -308,6 +308,18 @@ export async function exportData(button, statusElement) {
     handleError(new Error("Sesi tidak ditemukan. Silakan login ulang."));
     return;
   }
+
+  const confirmed = await confirmDialog({
+    title: "Export data Excel?",
+    message:
+      "File berisi akun, absensi, pengaturan, log, dan foto absensi akan dibuat dan diunduh.",
+    confirmLabel: "Buat file Excel",
+    tone: "primary",
+    secondMessage:
+      "Data bersifat internal. Jangan membagikan file ini ke pihak yang tidak berwenang."
+  });
+  if (!confirmed) return;
+
   const restore = withBusy(button, "Membuat Excel...");
   setStatus(statusElement, "Mengambil data dari server...");
   try {

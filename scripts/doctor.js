@@ -20,6 +20,12 @@ const REQUIRED_FUNCTIONS = [
   "app_update_profile",
   "app_change_password",
   "app_update_avatar",
+  "app_submit_suggestion",
+  "app_my_suggestions",
+  "admin_list_suggestions",
+  "admin_update_suggestion",
+  "admin_delete_suggestion",
+  "attendance_geofence_distance",
   "require_user",
   "require_admin",
   "log_action"
@@ -133,6 +139,9 @@ async function main() {
     const settings = await client.query(
       "select count(*)::int as total from public.settings"
     );
+    const suggestions = await client.query(
+      "select count(*)::int as total from public.suggestions"
+    );
     console.log(
       "Data     : users=" +
         users.rows[0].total +
@@ -141,7 +150,9 @@ async function main() {
         " attendance=" +
         attendance.rows[0].total +
         " settings=" +
-        settings.rows[0].total
+        settings.rows[0].total +
+        " suggestions=" +
+        suggestions.rows[0].total
     );
 
     const requiredUserColumns = [
@@ -162,6 +173,29 @@ async function main() {
       ok = false;
     } else {
       console.log("Kolom    : lengkap (password, login, avatar)");
+    }
+
+    const requiredAttendanceColumns = [
+      "location_lat",
+      "location_lng",
+      "location_accuracy_m",
+      "location_distance_m"
+    ];
+    const attendanceColumns = await client.query(
+      "select column_name from information_schema.columns where table_schema = 'public' and table_name = 'attendance' and column_name = any($1::text[])",
+      [requiredAttendanceColumns]
+    );
+    const attendanceNames = new Set(
+      attendanceColumns.rows.map((row) => row.column_name)
+    );
+    const missingAttendanceColumns = requiredAttendanceColumns.filter(
+      (name) => !attendanceNames.has(name)
+    );
+    if (missingAttendanceColumns.length) {
+      console.log("Kolom absensi: HILANG: " + missingAttendanceColumns.join(", "));
+      ok = false;
+    } else {
+      console.log("Kolom absensi: lengkap (koordinat, akurasi, jarak)");
     }
 
     const bucket = await client.query(
@@ -201,6 +235,39 @@ async function main() {
       ok = false;
     } else {
       console.log("Edit absensi: RPC dan argumen lengkap");
+    }
+
+    const geofenceRpc = await client.query(
+      `select exists (
+         select 1
+         from pg_proc p
+         join pg_namespace n on n.oid = p.pronamespace
+         where n.nspname = 'public'
+           and p.proname = 'app_check_in'
+           and pg_get_function_identity_arguments(p.oid) =
+             'p_token text, p_location text, p_note text, p_photo_url text, p_latitude double precision, p_longitude double precision, p_accuracy double precision'
+       ) as valid`
+    );
+    if (!geofenceRpc.rows[0].valid) {
+      console.log(
+        "Geofence  : RPC app_check_in belum memakai argumen koordinat dan akurasi GPS."
+      );
+      ok = false;
+    } else {
+      console.log("Geofence  : validasi radius dan akurasi GPS aktif");
+    }
+
+    const accuracySetting = await client.query(
+      "select value from public.settings where key = 'max_accuracy_m'"
+    );
+    if (
+      !accuracySetting.rows[0] ||
+      !/^[1-9][0-9]*$/.test(accuracySetting.rows[0].value)
+    ) {
+      console.log("Akurasi GPS: max_accuracy_m belum tersedia atau tidak valid.");
+      ok = false;
+    } else {
+      console.log("Akurasi GPS:", accuracySetting.rows[0].value + " m");
     }
 
     const checkoutSetting = await client.query(

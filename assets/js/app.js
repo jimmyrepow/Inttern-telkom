@@ -6,14 +6,15 @@ import {
   setSessionExpiredHandler,
   isSessionExpired
 } from "./core/api.js";
-import { APP_NAME, AUTO_REFRESH_MS } from "./core/config.js";
+import { APP_NAME, APP_CREDITS, AUTO_REFRESH_MS } from "./core/config.js";
 import { readToken, clearToken } from "./core/session.js";
-import { esc } from "./lib/dom.js";
+import { esc, confirmDialog } from "./lib/dom.js";
 import { renderAvatar } from "./lib/avatar.js";
 import { renderLogin } from "./views/login.js";
 import { renderAdmin, attachAdminEvents } from "./views/admin.js";
 import { renderIntern, attachInternEvents } from "./views/intern.js";
 import { renderAccount, attachAccountEvents } from "./views/account.js";
+import { renderSuggestions, attachSuggestionsEvents } from "./views/suggestions.js";
 import { exportData } from "./services/export.js";
 import { stopCamera } from "./services/photo.js";
 
@@ -25,12 +26,14 @@ const NAV = {
     { id: "attendance", label: "Absensi", icon: "bi-calendar2-check" },
     { id: "users", label: "Peserta", icon: "bi-people" },
     { id: "settings", label: "Pengaturan", icon: "bi-sliders" },
+    { id: "suggestions", label: "Kotak Saran", icon: "bi-chat-square-text" },
     { id: "account", label: "Akun", icon: "bi-person-gear" },
     { id: "guide", label: "Panduan", icon: "bi-book" }
   ],
   intern: [
     { id: "absen", label: "Absen Hari Ini", icon: "bi-fingerprint" },
     { id: "riwayat", label: "Riwayat", icon: "bi-clock-history" },
+    { id: "suggestions", label: "Kotak Saran", icon: "bi-chat-square-text" },
     { id: "account", label: "Akun", icon: "bi-person-gear" },
     { id: "guide", label: "Panduan", icon: "bi-book" }
   ]
@@ -41,12 +44,14 @@ const PAGE_META = {
     attendance: { title: "Absensi", subtitle: "Pantau kehadiran peserta hari ini" },
     users: { title: "Peserta", subtitle: "Kelola akun, role, dan password" },
     settings: { title: "Pengaturan", subtitle: "Atur jam masuk, zona waktu, dan lokasi kantor" },
+    suggestions: { title: "Kotak Saran", subtitle: "Baca dan tindak lanjuti masukan peserta" },
     account: { title: "Akun Saya", subtitle: "Ubah nama dan password akun Anda" },
     guide: { title: "Panduan", subtitle: "Cara memakai website untuk admin" }
   },
   intern: {
     absen: { title: "Absen Hari Ini", subtitle: "Catat kehadiran dengan GPS dan selfie" },
     riwayat: { title: "Riwayat", subtitle: "Semua absensi pribadi Anda" },
+    suggestions: { title: "Kotak Saran", subtitle: "Kirim masukan dan lihat balasan admin" },
     account: { title: "Akun Saya", subtitle: "Ubah nama dan password akun Anda" },
     guide: { title: "Panduan", subtitle: "Cara memakai website untuk peserta" }
   }
@@ -208,7 +213,12 @@ function canAutoRefresh() {
   if (!state.user || state.page !== "dashboard" || document.hidden) return false;
   if (state.cameraStream) return false;
   if (document.querySelector(".modal.show")) return false;
-  if (state.ui.tab === "settings" || state.ui.tab === "guide" || state.ui.tab === "account")
+  if (
+    state.ui.tab === "settings" ||
+    state.ui.tab === "suggestions" ||
+    state.ui.tab === "guide" ||
+    state.ui.tab === "account"
+  )
     return false;
   const active = document.activeElement;
   if (active && /^(INPUT|TEXTAREA|SELECT)$/.test(active.tagName)) return false;
@@ -249,6 +259,14 @@ async function forceLogout(message) {
 }
 
 async function logout() {
+  const confirmed = await confirmDialog({
+    title: "Keluar dari aplikasi?",
+    message: "Sesi Anda akan diakhiri di perangkat ini.",
+    confirmLabel: "Keluar",
+    tone: "warning",
+    secondMessage: "Pastikan pekerjaan sudah tersimpan. Anda perlu login kembali untuk membuka aplikasi."
+  });
+  if (!confirmed) return;
   stopAutoRefresh();
   stopCamera();
   try {
@@ -315,9 +333,6 @@ function renderHeader(role, isAdmin) {
         <span class="sync-status ${state.syncError ? "is-error" : ""}" title="${esc(state.syncError || "Terhubung ke server")}" aria-label="${syncLabel}">
           <span class="sync-dot"></span>
         </span>
-        <button class="header-icon-btn d-none d-sm-inline-flex" id="refresh-btn" type="button" aria-label="Muat ulang data" title="Muat ulang">
-          <i class="bi bi-arrow-clockwise"></i>
-        </button>
         ${isAdmin ? '<button class="header-icon-btn d-none d-lg-inline-flex" id="export-btn" type="button" aria-label="Export Excel" title="Export Excel"><i class="bi bi-download"></i></button>' : ""}
         <div class="dropdown">
           <button class="user-chip" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Menu akun">
@@ -334,7 +349,6 @@ function renderHeader(role, isAdmin) {
             </li>
             <li><button class="dropdown-item" type="button" data-nav="account"><i class="bi bi-person-gear me-2"></i>Akun saya</button></li>
             <li><button class="dropdown-item" type="button" data-nav="guide"><i class="bi bi-book me-2"></i>Panduan penggunaan</button></li>
-            <li><button class="dropdown-item" id="menu-refresh" type="button"><i class="bi bi-arrow-clockwise me-2"></i>Muat ulang data</button></li>
             ${isAdmin ? '<li><button class="dropdown-item" id="menu-export" type="button"><i class="bi bi-download me-2"></i>Export Excel</button></li>' : ""}
             <li><hr class="dropdown-divider" /></li>
             <li><button class="dropdown-item text-danger" id="menu-logout" type="button"><i class="bi bi-box-arrow-right me-2"></i>Keluar</button></li>
@@ -387,7 +401,14 @@ function renderDashboard() {
   if (!nav.some((item) => item.id === state.ui.tab)) state.ui.tab = nav[0].id;
 
   const isAccount = state.ui.tab === "account";
-  const content = isAccount ? renderAccount() : isAdmin ? renderAdmin() : renderIntern();
+  const isSuggestions = state.ui.tab === "suggestions";
+  const content = isAccount
+    ? renderAccount()
+    : isSuggestions
+      ? renderSuggestions()
+      : isAdmin
+        ? renderAdmin()
+        : renderIntern();
 
   app.innerHTML = `
     <div class="app-shell ${state.ui.sidebarOpen ? "sidebar-open" : ""}" id="app-shell">
@@ -399,6 +420,7 @@ function renderDashboard() {
         </main>
         <footer class="app-footer">
           <span>${esc(APP_NAME)}</span>
+          <span class="footer-credit"><i class="bi bi-stars"></i> ${esc(APP_CREDITS)}</span>
           <span class="d-none d-sm-inline">Data server: ${esc(state.lastSyncAt || "belum disinkronkan")}</span>
         </footer>
       </div>
@@ -409,15 +431,13 @@ function renderDashboard() {
   attachHeaderEvents();
   attachShellEvents();
   if (isAccount) attachAccountEvents({ rerender: renderDashboard, refresh: refreshData, logout });
+  else if (isSuggestions)
+    attachSuggestionsEvents({ rerender: renderDashboard, refresh: refreshData });
   else if (isAdmin) attachAdminEvents({ rerender: renderDashboard, refresh: refreshData });
   else attachInternEvents({ rerender: renderDashboard, refresh: refreshData });
 }
 
 function attachHeaderEvents() {
-  const refresh = document.getElementById("refresh-btn");
-  if (refresh) refresh.addEventListener("click", () => refreshData());
-  const refreshMenu = document.getElementById("menu-refresh");
-  if (refreshMenu) refreshMenu.addEventListener("click", () => refreshData());
   const logoutBtn = document.getElementById("menu-logout");
   if (logoutBtn) logoutBtn.addEventListener("click", () => logout());
   const exportBtn = document.getElementById("export-btn");

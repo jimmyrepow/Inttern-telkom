@@ -1,6 +1,7 @@
 const CONFIG = window.TELKOM_CONFIG || {};
 
 export const APP_NAME = CONFIG.appName || "TELKOM AKSES INTERNSHIP";
+export const APP_CREDITS = "Design inspired by Dhea · Dev Jimmy";
 export const AUTO_REFRESH_MS = CONFIG.autoRefreshMs || 30000;
 export const PHOTO_MAX_SIZE = CONFIG.photoMaxSize || 900;
 export const PHOTO_QUALITY = CONFIG.photoQuality || 0.72;

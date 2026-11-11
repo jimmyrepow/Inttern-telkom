@@ -6,8 +6,8 @@ export function renderGuide(role) {
         <span class="guide-kicker"><i class="bi bi-book"></i> Panduan penggunaan</span>
         <h2>${isAdmin ? "Panduan Admin" : "Panduan Peserta Magang"}</h2>
         <p>${isAdmin
-          ? "Kelola peserta, pantau dan koreksi absensi, atur jam masuk/pulang, dan unduh rekap Excel."
-          : "Cara absen masuk dan pulang, mengambil GPS, memakai kamera, dan melihat riwayat."}</p>
+          ? "Kelola peserta, pantau dan koreksi absensi, atur jam masuk/pulang, radius GPS, dan unduh rekap Excel."
+          : "Cara absen masuk dan pulang dengan GPS radius kantor, memakai kamera wajib, dan melihat riwayat."}</p>
       </div>
       <div class="guide-hero-art" aria-hidden="true">
         <i class="bi ${isAdmin ? "bi-speedometer2" : "bi-fingerprint"}"></i>
@@ -56,9 +56,10 @@ export function renderGuide(role) {
             <dt>Jam mulai pulang</dt><dd>Absen pulang baru aktif pada atau setelah jam yang ditetapkan. Default <code>17:00</code>, mengikuti zona waktu aplikasi.</dd>
             <dt>Zona waktu</dt><dd>Gunakan format <code>Asia/Jakarta</code>, <code>Asia/Makassar</code>, atau <code>Asia/Jayapura</code>.</dd>
             <dt>Koordinat kantor</dt><dd>Isi latitude dan longitude berpasangan. Bisa disalin dari Google Maps; periksa kembali sebelum menyimpan.</dd>
-            <dt>Radius absensi</dt><dd>Isi nilai sesuai kebijakan kantor. Pada backend saat ini, nilai radius belum memblokir absensi di luar area, jadi jangan mengandalkannya sebagai pembatas lokasi.</dd>
+            <dt>Radius absensi</dt><dd>Isi radius dalam meter. Server menolak absensi jika posisi pengguna berada di luar radius kantor. Nilai 0 menonaktifkan geofence.</dd>
+            <dt>Akurasi GPS maksimal</dt><dd>Batas toleransi akurasi GPS dalam meter. Absensi ditolak jika akurasi perangkat lebih buruk dari nilai ini. Nilai awal 100 m.</dd>
           </dl>
-          <div class="guide-note"><i class="bi bi-lightbulb"></i><span>Perubahan pengaturan tersimpan di server. Batas absen masuk dan zona waktu digunakan pada pencatatan berikutnya; batas pulang langsung diterapkan dan diperiksa oleh server.</span></div>
+          <div class="guide-note"><i class="bi bi-lightbulb"></i><span>Perubahan pengaturan tersimpan di server. Batas absen masuk, batas pulang, radius kantor, dan akurasi GPS diperiksa langsung oleh server saat absensi.</span></div>
         </section>
       </div>
 
@@ -92,10 +93,10 @@ export function renderGuide(role) {
       <section class="guide-card">
         <h3><span class="guide-icon"><i class="bi bi-fingerprint"></i></span> Cara absen yang benar</h3>
         <ol class="guide-steps">
-          <li><span>1</span><div><strong>Ambil lokasi (disarankan)</strong><p>Tekan <em>Ambil GPS</em> lalu izinkan akses lokasi. Tunggu sampai koordinat dan akurasi muncul. Jika gagal, absensi tetap dapat disimpan dan lokasi ditandai belum tersedia.</p></div></li>
-          <li><span>2</span><div><strong>Tambahkan foto (opsional)</strong><p>Foto tidak wajib diisi. Jika kebijakan kantor memerlukannya, gunakan <em>Kamera Perangkat</em> untuk membuka kamera HP atau <em>Kamera Browser</em> untuk pratinjau langsung.</p></div></li>
+          <li><span>1</span><div><strong>Lokasi GPS wajib</strong><p>Lokasi dideteksi otomatis. Izinkan akses lokasi dan aktifkan lokasi presisi. Tombol absen terkunci jika GPS belum siap, akurasi melebihi batas, atau posisi berada di luar radius kantor.</p></div></li>
+          <li><span>2</span><div><strong>Foto wajib</strong><p>Gunakan <em>Kamera Perangkat</em> atau <em>Kamera Browser</em>. Tombol absen baru aktif setelah foto siap dan lokasi memenuhi radius serta batas akurasi.</p></div></li>
           <li><span>3</span><div><strong>Isi catatan (opsional)</strong><p>Contoh: WFO, izin, atau keterangan tambahan. Maksimal 500 karakter.</p></div></li>
-          <li><span>4</span><div><strong>Tekan Absen Masuk</strong><p>Setelah berhasil, tombol berubah menjadi <em>Sudah Absen Masuk</em>. Tombol <em>Absen Pulang</em> aktif mulai jam pulang yang ditentukan admin dan server menolak absen lebih awal.</p></div></li>
+          <li><span>4</span><div><strong>Tekan Absen Masuk</strong><p>Setelah berhasil, tombol berubah menjadi <em>Sudah Absen Masuk</em>. Tombol <em>Absen Pulang</em> aktif mulai jam pulang yang ditentukan admin dan server menolak absen lebih awal atau di luar radius.</p></div></li>
         </ol>
         <div class="guide-note"><i class="bi bi-camera"></i><span>Jika izin kamera tidak muncul, buka lewat <code>http://localhost</code> atau HTTPS, lalu izinkan kamera lewat ikon gembok di address bar.</span></div>
       </section>
@@ -153,7 +154,7 @@ export function renderGuide(role) {
             <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq-gps" aria-expanded="false" aria-controls="faq-gps">Lokasi GPS gagal diambil</button>
           </h4>
           <div id="faq-gps" class="accordion-collapse collapse" data-bs-parent="#guide-faq">
-            <div class="accordion-body">Aktifkan lokasi di pengaturan HP dan izinkan browser mengakses lokasi. Jika tetap gagal, coba di area terbuka atau gunakan koneksi internet yang stabil. Absensi masih bisa disimpan, tetapi lokasi akan tercatat belum tersedia.</div>
+            <div class="accordion-body">Aktifkan lokasi di pengaturan HP, izinkan browser mengakses lokasi, dan pilih mode akurasi tinggi. Jika akurasi masih di atas batas, pindah ke area terbuka lalu tekan <em>Perbarui GPS</em>. Absensi tidak dapat disimpan tanpa GPS yang valid dan berada di dalam radius kantor.</div>
           </div>
         </div>
         <div class="accordion-item">
@@ -174,10 +175,10 @@ export function renderGuide(role) {
         </div>
         <div class="accordion-item">
           <h4 class="accordion-header">
-            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq-stale" aria-expanded="false" aria-controls="faq-stale">Data tidak berubah setelah disimpan</button>
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq-stale" aria-expanded="false" aria-controls="faq-stale">Data belum berubah setelah disimpan</button>
           </h4>
           <div id="faq-stale" class="accordion-collapse collapse" data-bs-parent="#guide-faq">
-            <div class="accordion-body">Tekan tombol muat ulang di header. Data juga diperbarui otomatis setiap 30 detik saat tab aktif. Pastikan koneksi internet stabil.</div>
+            <div class="accordion-body">Data diperbarui otomatis setiap 30 detik saat tab aktif. Tunggu beberapa saat dan pastikan koneksi internet stabil. Perubahan yang baru disimpan juga langsung dimuat ulang oleh aplikasi.</div>
           </div>
         </div>
         <div class="accordion-item">

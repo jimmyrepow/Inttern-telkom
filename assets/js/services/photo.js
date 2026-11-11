@@ -24,6 +24,7 @@ export function updateSelfieUi() {
   if (stat) stat.textContent = state.selfieData ? "Siap" : "Kosong";
   const clear = document.getElementById("clear-photo-btn");
   if (clear) clear.classList.toggle("d-none", !state.selfieData);
+  document.dispatchEvent(new CustomEvent("selfie:changed"));
 }
 
 function cameraErrorMessage(error) {
@@ -116,6 +117,10 @@ export function capturePhoto() {
   canvas.getContext("2d").drawImage(video, 0, 0, width, height);
   canvas.toBlob(
     (blob) => {
+      if (!blob) {
+        toast("Gagal memproses foto. Coba ambil ulang.", "danger");
+        return;
+      }
       state.selfieData = canvas.toDataURL("image/jpeg", PHOTO_QUALITY);
       state.selfieBlob = blob;
       stopCamera();
@@ -159,6 +164,10 @@ export function handlePhotoUpload(event) {
       canvas.getContext("2d").drawImage(image, 0, 0, width, height);
       canvas.toBlob(
         (blob) => {
+          if (!blob) {
+            toast("Gagal memproses foto. Coba pilih file lain.", "danger");
+            return;
+          }
           state.selfieData = canvas.toDataURL("image/jpeg", PHOTO_QUALITY);
           state.selfieBlob = blob;
           stopCamera();

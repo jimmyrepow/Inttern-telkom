@@ -1,6 +1,6 @@
 import { state } from "../core/store.js";
 import { rpc, handleError } from "../core/api.js";
-import { esc, toast, withBusy, createModal } from "../lib/dom.js";
+import { esc, toast, withBusy, createModal, confirmDialog } from "../lib/dom.js";
 import { formatDateTime, isActiveUser } from "../lib/format.js";
 import {
   renderAvatar,
@@ -334,6 +334,15 @@ function openAvatarDialog(context) {
   });
 
   saveButton.addEventListener("click", async () => {
+    const confirmed = await confirmDialog({
+      title: "Simpan avatar?",
+      message: "Avatar baru akan dipakai di menu, header, dan daftar peserta admin.",
+      confirmLabel: "Simpan avatar",
+      tone: "primary",
+      secondMessage: "Pastikan emoji dan warna sudah sesuai. Avatar lama akan langsung diganti."
+    });
+    if (!confirmed) return;
+
     const restore = withBusy(saveButton, "Menyimpan...");
     try {
       const result = await rpc("app_update_avatar", {
@@ -406,6 +415,21 @@ function bindProfileForm(context) {
       toast("Nama belum berubah.", "info");
       return;
     }
+
+    const confirmed = await confirmDialog({
+      title: "Simpan nama?",
+      message:
+        'Nama akan diubah dari "' +
+        String((state.user && state.user.name) || "") +
+        '" menjadi "' +
+        name +
+        '".',
+      confirmLabel: "Simpan nama",
+      tone: "primary",
+      secondMessage:
+        "Nama baru akan tampil pada menu, header, daftar peserta, dan absensi berikutnya."
+    });
+    if (!confirmed) return;
 
     const restore = withBusy(submit, "Menyimpan...");
     try {
@@ -520,6 +544,16 @@ function bindPasswordForm(context) {
       confirmInput.focus();
       return;
     }
+
+    const confirmed = await confirmDialog({
+      title: "Perbarui password?",
+      message: "Password akun Anda akan diganti dengan password baru.",
+      confirmLabel: "Perbarui password",
+      tone: "warning",
+      secondMessage:
+        "Sesi di perangkat lain akan otomatis keluar. Jika password baru lupa, Anda harus meminta admin melakukan reset."
+    });
+    if (!confirmed) return;
 
     const restore = withBusy(submit, "Memperbarui...");
     try {

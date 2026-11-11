@@ -2044,3 +2044,145 @@ body.sidebar-locked {
     font-size: 2.2rem;
   }
 }
+
+.attendance-ready-hint {
+  margin-top: 0.85rem;
+  padding: 0.7rem 0.85rem;
+  border-radius: 0.8rem;
+  border: 1px solid var(--gray-200);
+  background: var(--gray-100);
+  color: var(--gray-700);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.attendance-ready-hint.is-success {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+  color: #166534;
+}
+
+.attendance-ready-hint.is-warning {
+  border-color: #fde68a;
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.attendance-ready-hint.is-danger {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.footer-credit {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--pink-700);
+  font-weight: 600;
+}
+
+.auth-credit {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 1.1rem;
+  padding: 0.5rem 0.8rem;
+  border-radius: 999px;
+  background: rgba(236, 72, 153, 0.08);
+  color: var(--pink-700);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.suggestion-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.suggestion-item {
+  padding: 0.9rem;
+  border: 1px solid var(--gray-200);
+  border-radius: 1rem;
+  background: #fff;
+}
+
+.suggestion-message,
+.suggestion-quote {
+  margin: 0.65rem 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--gray-700);
+  font-size: 0.84rem;
+  line-height: 1.55;
+}
+
+.suggestion-quote {
+  margin-top: 0;
+  padding: 0.8rem;
+  border-radius: 0.8rem;
+  background: var(--gray-100);
+  font-size: 0.8rem;
+}
+
+.suggestion-message-preview {
+  max-width: 330px;
+  overflow-wrap: anywhere;
+  color: var(--gray-700);
+  font-size: 0.8rem;
+}
+
+.suggestion-reply-preview {
+  max-width: 230px;
+  overflow-wrap: anywhere;
+  color: var(--gray-500);
+  font-size: 0.76rem;
+}
+
+.suggestion-reply {
+  margin-top: 0.7rem;
+  padding: 0.7rem 0.8rem;
+  border-left: 3px solid var(--pink-500);
+  border-radius: 0.5rem;
+  background: #fff7fb;
+}
+
+.suggestion-reply-title {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--pink-700);
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.suggestion-reply p {
+  margin: 0.35rem 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--gray-700);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.suggestion-empty {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.8rem;
+  padding: 1.5rem 1rem;
+  border: 1px dashed var(--gray-200);
+  border-radius: 1rem;
+  background: var(--gray-100);
+  color: var(--gray-500);
+}
+
+.suggestion-empty > i {
+  margin-top: 0.1rem;
+  font-size: 1.2rem;
+  color: var(--pink-500);
+}
+
+.suggestion-empty p {
+  margin: 0.2rem 0 0;
+  font-size: 0.78rem;
+}

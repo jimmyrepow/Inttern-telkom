@@ -356,6 +356,23 @@ function openUserDialog(context, userId) {
       return;
     }
 
+    const confirmed = await confirmDialog({
+      title: editing ? "Simpan perubahan akun?" : "Tambah peserta baru?",
+      message:
+        (editing ? "Perbarui akun " : "Buat akun ") +
+        name +
+        " (@" +
+        username +
+        ") sebagai " +
+        (role === "admin" ? "admin" : "intern") +
+        ".",
+      confirmLabel: editing ? "Simpan perubahan" : "Tambah peserta",
+      tone: "primary",
+      secondMessage:
+        "Periksa kembali nama, username, role, dan status aktif. Perubahan akun langsung berlaku setelah disimpan."
+    });
+    if (!confirmed) return;
+
     const restore = withBusy(submit, editing ? "Menyimpan..." : "Menambahkan...");
     try {
       const result = editing
@@ -407,6 +424,17 @@ async function handleResetPassword(userId, refresh) {
   });
   if (!password) return;
 
+  const confirmed = await confirmDialog({
+    title: "Reset password?",
+    message:
+      "Password akun " + user.name + " (@" + user.username + ") akan diganti dengan password baru.",
+    confirmLabel: "Reset password",
+    tone: "warning",
+    secondMessage:
+      "Sampaikan password baru kepada pemilik akun melalui jalur yang aman. Sesi lama akun tersebut tidak lagi dapat memakai password lama."
+  });
+  if (!confirmed) return;
+
   try {
     const result = await rpc("admin_reset_password", { p_id: userId, p_password: password });
     toast((result && result.message) || "Password berhasil direset.", "success");
@@ -423,7 +451,9 @@ async function handleDeleteUser(userId, refresh) {
     title: "Hapus akun",
     message: "Hapus akun " + user.name + " (" + user.username + ") beserta seluruh data absensinya?",
     confirmLabel: "Hapus akun",
-    tone: "danger"
+    tone: "danger",
+    secondMessage:
+      "Tindakan ini permanen. Akun, seluruh absensi, dan foto absensi peserta akan dihapus dan tidak dapat dikembalikan."
   });
   if (!confirmed) return;
 
@@ -450,7 +480,9 @@ async function handleDeleteUserAttendance(userId, refresh) {
     message:
       "Hapus seluruh " + count + " data absensi milik " + user.name + "? Akun peserta tetap ada.",
     confirmLabel: "Hapus absensi",
-    tone: "warning"
+    tone: "warning",
+    secondMessage:
+      "Seluruh riwayat dan foto absensi peserta akan dihapus permanen. Akun peserta tetap dapat dipakai untuk absen berikutnya."
   });
   if (!confirmed) return;
 

@@ -1,7 +1,7 @@
 import { state } from "../../core/store.js";
 import { rpc, handleError, projectHost } from "../../core/api.js";
 import { APP_NAME, PHOTO_BUCKET } from "../../core/config.js";
-import { esc, toast, withBusy } from "../../lib/dom.js";
+import { esc, toast, withBusy, confirmDialog } from "../../lib/dom.js";
 import { exportData } from "../../services/export.js";
 
 export function renderAdminSettingsTab() {
@@ -66,9 +66,17 @@ export function renderAdminSettingsTab() {
                   <input id="settings-office-lng" class="form-control rounded-3" type="text" inputmode="decimal" value="${esc(settings.office_lng || "")}" placeholder="106.816666" />
                 </div>
               </div>
-              <div class="mb-1 mt-3">
-                <label class="form-label small fw-semibold" for="settings-max-radius">Radius absensi (meter)</label>
-                <input id="settings-max-radius" class="form-control rounded-3" type="number" min="0" step="1" value="${esc(settings.max_radius_m || "")}" placeholder="200" />
+              <div class="row g-2 mt-3">
+                <div class="col-12 col-sm-6">
+                  <label class="form-label small fw-semibold" for="settings-max-radius">Radius absensi (meter)</label>
+                  <input id="settings-max-radius" class="form-control rounded-3" type="number" min="0" step="1" value="${esc(settings.max_radius_m || "")}" placeholder="200" />
+                  <div class="form-text">0 = geofence nonaktif. Isi koordinat kantor agar aktif.</div>
+                </div>
+                <div class="col-12 col-sm-6">
+                  <label class="form-label small fw-semibold" for="settings-max-accuracy">Akurasi GPS maksimal (meter)</label>
+                  <input id="settings-max-accuracy" class="form-control rounded-3" type="number" min="1" step="1" value="${esc(settings.max_accuracy_m || "100")}" placeholder="100" />
+                  <div class="form-text">Absensi ditolak jika akurasi GPS lebih buruk dari nilai ini.</div>
+                </div>
               </div>
               <button class="btn btn-primary rounded-3 w-100 mt-3" id="settings-submit" type="submit">Simpan pengaturan</button>
             </form>
@@ -124,6 +132,7 @@ async function handleSettingsSubmit(event, refresh) {
   const officeLat = document.getElementById("settings-office-lat").value.trim();
   const officeLng = document.getElementById("settings-office-lng").value.trim();
   const maxRadius = document.getElementById("settings-max-radius").value.trim();
+  const maxAccuracy = document.getElementById("settings-max-accuracy").value.trim();
 
   if (!appName) {
     toast("Nama aplikasi wajib diisi.", "danger");
@@ -168,10 +177,34 @@ async function handleSettingsSubmit(event, refresh) {
       return;
     }
   }
+  if (maxAccuracy) {
+    const accuracy = Number(maxAccuracy);
+    if (!isFinite(accuracy) || accuracy < 1) {
+      toast("Akurasi GPS maksimal harus angka 1 atau lebih.", "danger");
+      return;
+    }
+  }
   if ((officeLat || officeLng) && (!maxRadius || Number(maxRadius) <= 0)) {
     toast("Isi radius absensi lebih dari 0 jika koordinat kantor diatur.", "danger");
     return;
   }
+
+  const confirmed = await confirmDialog({
+    title: "Simpan pengaturan?",
+    message:
+      "Batas masuk " +
+      lateLimit +
+      ", jam pulang " +
+      checkoutLimit +
+      ", dan zona waktu " +
+      timezone +
+      " akan langsung dipakai oleh seluruh pengguna.",
+    confirmLabel: "Simpan pengaturan",
+    tone: "primary",
+    secondMessage:
+      "Periksa kembali koordinat, radius, dan batas akurasi GPS. Absensi di luar radius atau dengan akurasi buruk akan ditolak."
+  });
+  if (!confirmed) return;
 
   const button = document.getElementById("settings-submit");
   const restore = withBusy(button, "Menyimpan...");
@@ -185,6 +218,7 @@ async function handleSettingsSubmit(event, refresh) {
         office_lat: officeLat,
         office_lng: officeLng,
         max_radius_m: maxRadius,
+        max_accuracy_m: maxAccuracy,
         timezone
       }
     });

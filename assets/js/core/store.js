@@ -16,7 +16,20 @@ export const state = {
   cameraStream: null,
   note: "",
   currentLocation: "",
+  currentLat: null,
+  currentLng: null,
   locationAccuracy: null,
+  locationStatus: "idle",
+  locationError: "",
+  locationAt: 0,
+  attendanceSubmitting: false,
+  suggestions: [],
+  suggestionSummary: null,
+  suggestionLoading: false,
+  suggestionError: "",
+  suggestionLoadedFor: "",
+  suggestionDraft: "",
+  suggestionCategory: "umum",
   ui: {
     tab: "attendance",
     search: "",
@@ -27,6 +40,9 @@ export const state = {
     userSearch: "",
     userRole: "",
     historyMonth: "",
+    suggestionStatus: "",
+    suggestionSearch: "",
+    suggestionPage: 1,
     sidebarOpen: false
   }
 };
@@ -46,7 +62,20 @@ export function resetSessionState() {
   state.selfieBlob = null;
   state.note = "";
   state.currentLocation = "";
+  state.currentLat = null;
+  state.currentLng = null;
   state.locationAccuracy = null;
+  state.locationStatus = "idle";
+  state.locationError = "";
+  state.locationAt = 0;
+  state.attendanceSubmitting = false;
+  state.suggestions = [];
+  state.suggestionSummary = null;
+  state.suggestionLoading = false;
+  state.suggestionError = "";
+  state.suggestionLoadedFor = "";
+  state.suggestionDraft = "";
+  state.suggestionCategory = "umum";
   state.ui.tab = "attendance";
   state.ui.search = "";
   state.ui.date = "";
@@ -56,5 +85,8 @@ export function resetSessionState() {
   state.ui.userSearch = "";
   state.ui.userRole = "";
   state.ui.historyMonth = "";
+  state.ui.suggestionStatus = "";
+  state.ui.suggestionSearch = "";
+  state.ui.suggestionPage = 1;
   state.ui.sidebarOpen = false;
 }

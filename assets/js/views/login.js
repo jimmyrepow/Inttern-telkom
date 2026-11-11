@@ -2,6 +2,7 @@ import { state } from "../core/store.js";
 import { rpc, authErrorMessage } from "../core/api.js";
 import { saveToken } from "../core/session.js";
 import { esc, withBusy } from "../lib/dom.js";
+import { APP_CREDITS } from "../core/config.js";
 
 export function renderLogin(message, onSuccess) {
   state.page = "login";
@@ -37,10 +38,11 @@ export function renderLogin(message, onSuccess) {
             Lupa password? Hubungi admin untuk melakukan reset password.
           </div>
           <div class="auth-features">
-            <div class="auth-feature"><span class="dot"></span><span>Absen masuk dan pulang dengan GPS dan selfie.</span></div>
-            <div class="auth-feature"><span class="dot"></span><span>Dashboard admin untuk peserta, rekap absensi, dan export Excel.</span></div>
+            <div class="auth-feature"><span class="dot"></span><span>Absen masuk dan pulang dengan GPS otomatis dan selfie wajib.</span></div>
+            <div class="auth-feature"><span class="dot"></span><span>Dashboard admin untuk peserta, rekap absensi, kotak saran, dan export Excel.</span></div>
             <div class="auth-feature"><span class="dot"></span><span>Data tersimpan aman di server.</span></div>
           </div>
+          <div class="auth-credit"><i class="bi bi-stars"></i> ${esc(APP_CREDITS)}</div>
         </div>
       </div>
     </div>

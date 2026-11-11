@@ -1,7 +1,7 @@
 import { state } from "../core/store.js";
 import { rpc, handleError, sb } from "../core/api.js";
 import { PHOTO_BUCKET } from "../core/config.js";
-import { esc, toast, withBusy } from "../lib/dom.js";
+import { esc, toast, withBusy, confirmDialog } from "../lib/dom.js";
 import { getTodayDate, shortTime, statusBadge, formatMonth } from "../lib/format.js";
 import { statCard, renderPhoto } from "../lib/render.js";
 import {
@@ -13,8 +13,14 @@ import {
   updateSelfieUi,
   uploadPhoto
 } from "../services/photo.js";
-import { renderLocationDisplay, requestLocation } from "../services/location.js";
+import {
+  renderLocationDisplay,
+  requestLocation,
+  ensureLocation,
+  isLocationReady
+} from "../services/location.js";
 import { renderGuide } from "./guide.js";
+import { getGeofence, geofenceReason, formatDistance } from "../services/geofence.js";
 
 function checkoutTimeReached(limit, timezone) {
   if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(limit)) return false;
@@ -33,6 +39,201 @@ function checkoutTimeReached(limit, timezone) {
   }
 }
 
+let attendanceSyncBound = false;
+
+function photoReady() {
+  return Boolean(state.selfieData && state.selfieBlob);
+}
+
+function geofenceAllowsAttendance() {
+  return getGeofence().allowed;
+}
+
+function geofenceBlockedLabel() {
+  const geo = getGeofence();
+  if (!geo.radiusEnabled) return "";
+  if (!geo.configured) return "Radius Belum Diatur";
+  if (!geo.accuracyOk) return "Akurasi GPS Rendah";
+  if (!geo.inside) return "Di Luar Radius";
+  return "";
+}
+
+function attendanceSnapshot() {
+  const today = getTodayDate();
+  const settings = state.settings || {};
+  const existing =
+    state.attendance.find(
+      (row) =>
+        String(row.user_id) === String(state.user && state.user.id) &&
+        String(row.date) === today
+    ) || null;
+  const checkoutSettingReady = /^([01]\d|2[0-3]):[0-5]\d$/.test(
+    settings.checkout_limit || ""
+  );
+  const checkoutLimit = checkoutSettingReady ? settings.checkout_limit : "17:00";
+  const timezone = settings.timezone || "Asia/Jakarta";
+
+  return {
+    today,
+    existing,
+    hasIn: Boolean(existing && existing.check_in),
+    hasOut: Boolean(existing && existing.check_out),
+    lateLimit: settings.late_limit || "08:15",
+    checkoutSettingReady,
+    checkoutLimit,
+    timezone,
+    checkoutReady:
+      checkoutSettingReady && checkoutTimeReached(checkoutLimit, timezone)
+  };
+}
+
+function attendanceHint(snapshot) {
+  if (snapshot.hasOut) {
+    return { text: "Absensi hari ini sudah lengkap. Terima kasih.", tone: "success" };
+  }
+  if (!isLocationReady() && !photoReady()) {
+    const locationText =
+      state.locationStatus === "error"
+        ? "Lokasi GPS gagal dideteksi."
+        : state.locationStatus === "loading"
+          ? "Lokasi GPS sedang dideteksi otomatis."
+          : "Lokasi GPS belum aktif.";
+    return {
+      text: locationText + " Ambil foto juga agar tombol absen aktif.",
+      tone: state.locationStatus === "error" ? "danger" : "muted"
+    };
+  }
+  if (!isLocationReady()) {
+    if (state.locationStatus === "error") {
+      return {
+        text: "Lokasi GPS gagal dideteksi. Tekan Coba Lagi pada panel lokasi.",
+        tone: "danger"
+      };
+    }
+    if (state.locationStatus === "loading") {
+      return { text: "Sedang mendeteksi lokasi GPS otomatis...", tone: "muted" };
+    }
+    return { text: "Menunggu lokasi GPS terdeteksi otomatis...", tone: "muted" };
+  }
+  const geofenceMessage = geofenceReason(getGeofence());
+  if (geofenceMessage) {
+    return { text: geofenceMessage, tone: "danger" };
+  }
+  if (!photoReady()) {
+    return {
+      text: "Lokasi siap. Ambil foto terlebih dahulu untuk mengaktifkan tombol absen.",
+      tone: "warning"
+    };
+  }
+  if (!snapshot.hasIn) {
+    return {
+      text: "Lokasi dan foto siap. Tombol absen masuk sudah aktif.",
+      tone: "success"
+    };
+  }
+  if (!snapshot.checkoutSettingReady) {
+    return {
+      text: "Lokasi dan foto siap. Pengaturan jam pulang belum tersedia; hubungi admin.",
+      tone: "warning"
+    };
+  }
+  if (!snapshot.checkoutReady) {
+    return {
+      text:
+        "Lokasi dan foto siap. Absen pulang aktif pukul " +
+        snapshot.checkoutLimit +
+        " (" +
+        snapshot.timezone +
+        ").",
+      tone: "muted"
+    };
+  }
+  return {
+    text: "Lokasi dan foto siap. Tombol absen pulang sudah aktif.",
+    tone: "success"
+  };
+}
+
+function checkInLabel(snapshot) {
+  if (snapshot.hasIn) return "Sudah Absen Masuk";
+  if (state.attendanceSubmitting) return "Menyimpan...";
+  if (!isLocationReady()) {
+    return state.locationStatus === "loading" ? "Mendeteksi GPS..." : "Menunggu GPS";
+  }
+  const blockedLabel = geofenceBlockedLabel();
+  if (blockedLabel) return blockedLabel;
+  if (!photoReady()) return "Ambil Foto Dulu";
+  return "Absen Masuk";
+}
+
+function checkOutLabel(snapshot) {
+  if (snapshot.hasOut) return "Sudah Absen Pulang";
+  if (state.attendanceSubmitting) return "Menyimpan...";
+  if (!snapshot.hasIn) return "Absen Pulang";
+  if (!snapshot.checkoutSettingReady) return "Absen Pulang belum dikonfigurasi";
+  if (!snapshot.checkoutReady) {
+    return "Absen Pulang (aktif pukul " + snapshot.checkoutLimit + ")";
+  }
+  if (!isLocationReady()) {
+    return state.locationStatus === "loading" ? "Mendeteksi GPS..." : "Menunggu GPS";
+  }
+  const blockedLabel = geofenceBlockedLabel();
+  if (blockedLabel) return blockedLabel;
+  if (!photoReady()) return "Ambil Foto Dulu";
+  return "Absen Pulang";
+}
+
+function renderAttendanceHint(snapshot) {
+  const hint = attendanceHint(snapshot);
+  return (
+    '<div id="attendance-ready-hint" class="attendance-ready-hint is-' +
+    hint.tone +
+    '" aria-live="polite">' +
+    esc(hint.text) +
+    "</div>"
+  );
+}
+
+function updateAttendanceAvailability() {
+  const snapshot = attendanceSnapshot();
+  const checkInButton = document.getElementById("check-in-btn");
+  const checkOutButton = document.getElementById("check-out-btn");
+  if (!checkInButton && !checkOutButton) return;
+
+  if (checkInButton) {
+    checkInButton.disabled =
+      snapshot.hasIn ||
+      !geofenceAllowsAttendance() ||
+      !photoReady() ||
+      state.attendanceSubmitting;
+    checkInButton.textContent = checkInLabel(snapshot);
+  }
+  if (checkOutButton) {
+    checkOutButton.disabled =
+      snapshot.hasOut ||
+      !snapshot.hasIn ||
+      !snapshot.checkoutReady ||
+      !geofenceAllowsAttendance() ||
+      !photoReady() ||
+      state.attendanceSubmitting;
+    checkOutButton.textContent = checkOutLabel(snapshot);
+  }
+
+  const hint = document.getElementById("attendance-ready-hint");
+  if (hint) {
+    const next = attendanceHint(snapshot);
+    hint.className = "attendance-ready-hint is-" + next.tone;
+    hint.textContent = next.text;
+  }
+}
+
+function bindAttendanceSync() {
+  if (attendanceSyncBound) return;
+  document.addEventListener("selfie:changed", updateAttendanceAvailability);
+  document.addEventListener("location:changed", updateAttendanceAvailability);
+  attendanceSyncBound = true;
+}
+
 export function renderIntern() {
   if (state.ui.tab === "guide") return renderGuide("intern");
 
@@ -49,25 +250,45 @@ export function renderIntern() {
 }
 
 function renderAbsenView(history) {
-  const today = getTodayDate();
-  const user = state.user;
-  const todayRow = history.find((row) => String(row.date) === today);
-  const hasIn = Boolean(todayRow && todayRow.check_in);
-  const hasOut = Boolean(todayRow && todayRow.check_out);
-  const settings = state.settings || {};
-  const lateLimit = settings.late_limit || "08:15";
-  const checkoutSettingReady = /^([01]\d|2[0-3]):[0-5]\d$/.test(settings.checkout_limit || "");
-  const checkoutLimit = checkoutSettingReady ? settings.checkout_limit : "17:00";
-  const timezone = settings.timezone || "Asia/Jakarta";
-  const checkoutReady = checkoutSettingReady && checkoutTimeReached(checkoutLimit, timezone);
+  const snapshot = attendanceSnapshot();
+  const today = snapshot.today;
+  const todayRow = snapshot.existing;
+  const hasIn = snapshot.hasIn;
+  const hasOut = snapshot.hasOut;
+  const lateLimit = snapshot.lateLimit;
+  const timezone = snapshot.timezone;
   const recent = history.slice(0, 6);
+  const locationLabel =
+    state.locationStatus === "loading"
+      ? "Mendeteksi"
+      : state.locationStatus === "error"
+        ? "Gagal"
+        : isLocationReady()
+          ? !getGeofence().radiusEnabled
+            ? "Aktif"
+            : !getGeofence().configured
+              ? "Belum diatur"
+              : !getGeofence().inside
+                ? "Di luar"
+                : !getGeofence().accuracyOk
+                  ? "Akurasi"
+                  : "Aktif"
+          : "Belum";
+  const locationButtonLabel =
+    state.locationStatus === "loading"
+      ? "Mendeteksi..."
+      : state.locationStatus === "error"
+        ? "Coba Lagi"
+        : state.currentLocation
+          ? "Perbarui GPS"
+          : "Ambil GPS";
 
   return `
     <div class="stats-grid mb-4">
       ${statCard("Status hari ini", hasIn ? (hasOut ? "Selesai" : "Sudah masuk") : "Belum absen", today)}
       ${statCard("Keterlambatan", todayRow ? (todayRow.status === "late" ? "Telat" : "Tepat waktu") : "-")}
-      ${statCard("GPS", state.currentLocation ? "Aktif" : "Belum", "", "gps-stat")}
-      ${statCard("Selfie", state.selfieData ? "Siap" : "Kosong", "", "selfie-stat")}
+      ${statCard("GPS", locationLabel, "", "gps-stat")}
+      ${statCard("Selfie", photoReady() ? "Siap" : "Kosong", "", "selfie-stat")}
     </div>
     <div class="row g-3">
       <div class="col-12 col-xl-7" id="absen-card">
@@ -84,7 +305,7 @@ function renderAbsenView(history) {
             <div class="location-box mb-3">
               <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
                 <strong class="small">Lokasi GPS</strong>
-                <button class="btn btn-sm btn-outline-primary rounded-pill" id="location-btn" type="button">Ambil GPS</button>
+                <button class="btn btn-sm btn-outline-primary rounded-pill" id="location-btn" type="button" ${state.locationStatus === "loading" ? "disabled" : ""}>${esc(locationButtonLabel)}</button>
               </div>
               <div id="location-display" class="small text-secondary">${renderLocationDisplay()}</div>
             </div>
@@ -104,10 +325,10 @@ function renderAbsenView(history) {
               <textarea id="attendance-note" class="form-control rounded-3" rows="2" maxlength="500" placeholder="Contoh: WFO / izin / keterangan tambahan">${esc(state.note)}</textarea>
             </div>
             <div class="d-flex flex-wrap gap-2 mt-3">
-              <button class="btn btn-primary flex-fill rounded-3" id="check-in-btn" type="button" ${hasIn ? "disabled" : ""}>${hasIn ? "Sudah Absen Masuk" : "Absen Masuk"}</button>
-              <button class="btn btn-danger flex-fill rounded-3" id="check-out-btn" type="button" ${!hasIn || hasOut || !checkoutReady ? "disabled" : ""}>${hasOut ? "Sudah Absen Pulang" : !checkoutSettingReady ? "Absen Pulang belum dikonfigurasi" : !checkoutReady ? "Absen Pulang (aktif pukul " + esc(checkoutLimit) + ")" : "Absen Pulang"}</button>
+              <button class="btn btn-primary flex-fill rounded-3" id="check-in-btn" type="button" aria-describedby="attendance-ready-hint" ${hasIn || !geofenceAllowsAttendance() || !photoReady() || state.attendanceSubmitting ? "disabled" : ""}>${esc(checkInLabel(snapshot))}</button>
+              <button class="btn btn-danger flex-fill rounded-3" id="check-out-btn" type="button" aria-describedby="attendance-ready-hint" ${hasOut || !hasIn || !snapshot.checkoutReady || !geofenceAllowsAttendance() || !photoReady() || state.attendanceSubmitting ? "disabled" : ""}>${esc(checkOutLabel(snapshot))}</button>
             </div>
-            ${!hasOut ? '<div id="checkout-lock-hint" class="small text-secondary mt-2" aria-live="polite">' + (!checkoutSettingReady ? "Pengaturan jam pulang belum tersedia. Hubungi admin untuk menyiapkan database." : checkoutReady ? "Absen pulang sudah aktif." : "Absen pulang aktif mulai pukul " + esc(checkoutLimit) + " (" + esc(timezone) + ").") + "</div>" : ""}
+            ${renderAttendanceHint(snapshot)}
             ${todayRow ? '<div class="small text-secondary mt-3">Absen hari ini: masuk ' + esc(shortTime(todayRow.check_in)) + " &middot; pulang " + esc(shortTime(todayRow.check_out)) + " &middot; " + statusBadge(todayRow.status, hasIn) + "</div>" : ""}
           </div>
         </div>
@@ -280,6 +501,16 @@ export function attachInternEvents(context) {
   if (state.checkoutTimer) clearInterval(state.checkoutTimer);
   state.checkoutTimer = null;
 
+  const checkInButton = document.getElementById("check-in-btn");
+  const checkOutButton = document.getElementById("check-out-btn");
+  if (checkInButton || checkOutButton) {
+    bindAttendanceSync();
+    updateAttendanceAvailability();
+    const snapshot = attendanceSnapshot();
+    if (!(snapshot.hasIn && snapshot.hasOut)) ensureLocation();
+    state.checkoutTimer = setInterval(updateAttendanceAvailability, 1000);
+  }
+
   const monthInput = document.getElementById("history-month");
   if (monthInput) {
     monthInput.addEventListener("change", () => {
@@ -302,48 +533,8 @@ export function attachInternEvents(context) {
     });
   }
 
-  const checkoutBtn = document.getElementById("check-out-btn");
-  if (checkoutBtn) {
-    const configuredCheckoutLimit = (state.settings && state.settings.checkout_limit) || "";
-    const checkoutSettingReady = /^([01]\d|2[0-3]):[0-5]\d$/.test(configuredCheckoutLimit);
-    const checkoutLimit = checkoutSettingReady ? configuredCheckoutLimit : "";
-    const timezone = (state.settings && state.settings.timezone) || "Asia/Jakarta";
-    const today = getTodayDate();
-    const existing = state.attendance.find(
-      (row) => String(row.user_id) === String(state.user.id) && String(row.date) === today
-    );
-    const hasIn = Boolean(existing && existing.check_in);
-    const hasOut = Boolean(existing && existing.check_out);
-    const updateCheckoutAvailability = () => {
-      if (!checkoutBtn.isConnected) {
-        clearInterval(state.checkoutTimer);
-        state.checkoutTimer = null;
-        return;
-      }
-      const ready = checkoutSettingReady && checkoutTimeReached(checkoutLimit, timezone);
-      checkoutBtn.disabled = !hasIn || hasOut || !ready;
-      if (!hasOut) {
-        checkoutBtn.textContent = !checkoutSettingReady
-          ? "Absen Pulang belum dikonfigurasi"
-          : ready
-            ? "Absen Pulang"
-            : "Absen Pulang (aktif pukul " + checkoutLimit + ")";
-      }
-      const hint = document.getElementById("checkout-lock-hint");
-      if (hint) {
-        hint.textContent = !checkoutSettingReady
-          ? "Pengaturan jam pulang belum tersedia. Hubungi admin untuk menyiapkan database."
-          : ready
-            ? "Absen pulang sudah aktif."
-            : "Absen pulang aktif mulai pukul " + checkoutLimit + " (" + timezone + ").";
-      }
-    };
-    updateCheckoutAvailability();
-    state.checkoutTimer = setInterval(updateCheckoutAvailability, 1000);
-  }
-
   const locationBtn = document.getElementById("location-btn");
-  if (locationBtn) locationBtn.addEventListener("click", requestLocation);
+  if (locationBtn) locationBtn.addEventListener("click", () => requestLocation());
 
   const cameraBtn = document.getElementById("camera-btn");
   if (cameraBtn) {
@@ -377,58 +568,107 @@ export function attachInternEvents(context) {
     });
   }
 
-  const checkInBtn = document.getElementById("check-in-btn");
-  if (checkInBtn)
-    checkInBtn.addEventListener("click", () =>
-      handleAttendanceSubmit("check-in", checkInBtn, refresh)
+  if (checkInButton)
+    checkInButton.addEventListener("click", () =>
+      handleAttendanceSubmit("check-in", checkInButton, refresh)
     );
 
-  const checkOutBtn = document.getElementById("check-out-btn");
-  if (checkOutBtn)
-    checkOutBtn.addEventListener("click", () =>
-      handleAttendanceSubmit("check-out", checkOutBtn, refresh)
+  if (checkOutButton)
+    checkOutButton.addEventListener("click", () =>
+      handleAttendanceSubmit("check-out", checkOutButton, refresh)
     );
 }
 
 async function handleAttendanceSubmit(type, button, refresh) {
   const user = state.user;
-  if (!user) return;
-  const today = getTodayDate();
-  const existing = state.attendance.find(
-    (row) => String(row.user_id) === String(user.id) && String(row.date) === today
-  );
+  if (!user || state.attendanceSubmitting) return;
 
-  if (type === "check-in" && existing && existing.check_in) {
+  const snapshot = attendanceSnapshot();
+
+  if (type === "check-in" && snapshot.hasIn) {
     toast("Anda sudah absen masuk hari ini.", "danger");
     return;
   }
   if (type === "check-out") {
-    if (!existing || !existing.check_in) {
+    if (!snapshot.hasIn) {
       toast("Anda belum absen masuk hari ini.", "danger");
       return;
     }
-    if (existing.check_out) {
+    if (snapshot.hasOut) {
       toast("Anda sudah absen pulang hari ini.", "danger");
       return;
     }
   }
 
+  if (!photoReady()) {
+    toast("Ambil foto terlebih dahulu. Foto wajib tersedia sebelum absen.", "warning");
+    updateAttendanceAvailability();
+    return;
+  }
+  if (!isLocationReady()) {
+    toast("Lokasi GPS belum terdeteksi. Tunggu deteksi otomatis atau tekan Coba Lagi.", "warning");
+    updateAttendanceAvailability();
+    if (state.locationStatus === "error" || state.locationStatus === "idle") requestLocation();
+    return;
+  }
+  const geofence = getGeofence();
+  const geofenceMessage = geofenceReason(geofence);
+  if (geofenceMessage) {
+    toast(geofenceMessage, "danger");
+    updateAttendanceAvailability();
+    return;
+  }
+
+  const geofenceSummary = geofence.radiusEnabled
+    ? " Jarak " +
+      formatDistance(geofence.distance) +
+      " dari kantor (radius " +
+      formatDistance(geofence.radius) +
+      "), akurasi GPS sekitar " +
+      Math.round(geofence.accuracy || 0) +
+      " m."
+    : "";
+  const confirmed = await confirmDialog({
+    title: type === "check-in" ? "Konfirmasi absen masuk" : "Konfirmasi absen pulang",
+    message:
+      (type === "check-in" ? "Simpan absen masuk" : "Simpan absen pulang") +
+      " untuk " +
+      user.name +
+      "?",
+    confirmLabel: "Lanjutkan",
+    tone: "primary",
+    secondMessage:
+      "Lokasi " +
+      state.currentLocation +
+      " dan foto sudah siap." +
+      geofenceSummary +
+      " Waktu absensi mengikuti server dan tidak dapat diubah dari halaman ini."
+  });
+  if (!confirmed || state.attendanceSubmitting) return;
+
+  state.attendanceSubmitting = true;
+  updateAttendanceAvailability();
   const restore = withBusy(
     button,
     type === "check-in" ? "Menyimpan absen masuk..." : "Menyimpan absen pulang..."
   );
   let uploadedPath = "";
   try {
-    let photoUrl = "";
-    if (state.selfieBlob) {
-      const uploaded = await uploadPhoto(state.selfieBlob, type === "check-in" ? "masuk" : "pulang");
-      photoUrl = uploaded.url;
-      uploadedPath = uploaded.path;
+    if (!state.selfieBlob) {
+      throw new Error("Foto absensi tidak tersedia. Ambil foto ulang lalu coba lagi.");
     }
+    const uploaded = await uploadPhoto(
+      state.selfieBlob,
+      type === "check-in" ? "masuk" : "pulang"
+    );
+    uploadedPath = uploaded.path;
     const result = await rpc(type === "check-in" ? "app_check_in" : "app_check_out", {
-      p_location: state.currentLocation || "Belum ada lokasi",
+      p_location: state.currentLocation,
       p_note: state.note || "",
-      p_photo_url: photoUrl
+      p_photo_url: uploaded.url,
+      p_latitude: state.currentLat,
+      p_longitude: state.currentLng,
+      p_accuracy: state.locationAccuracy
     });
     toast((result && result.message) || "Absensi berhasil disimpan.", "success");
     state.note = "";
@@ -444,6 +684,8 @@ async function handleAttendanceSubmit(type, button, refresh) {
     }
     handleError(error);
   } finally {
+    state.attendanceSubmitting = false;
     restore();
+    updateAttendanceAvailability();
   }
 }

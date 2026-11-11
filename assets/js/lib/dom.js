@@ -62,7 +62,7 @@ function modalToneClass(tone) {
   return tone === "primary" ? "btn-primary" : tone === "warning" ? "btn-warning" : "btn-danger";
 }
 
-export function confirmDialog(options) {
+function singleConfirm(options) {
   const opts = options || {};
   const message = opts.message || "";
   if (window.Swal) {
@@ -130,6 +130,23 @@ export function confirmDialog(options) {
       element.remove();
     });
     modal.show();
+  });
+}
+
+export async function confirmDialog(options) {
+  const opts = options || {};
+  const first = await singleConfirm(opts);
+  if (!first) return false;
+  if (opts.requireSecond === false) return true;
+
+  return singleConfirm({
+    title: opts.secondTitle || "Konfirmasi terakhir",
+    message:
+      opts.secondMessage ||
+      "Tindakan ini akan langsung dijalankan. Pastikan data sudah benar dan Anda yakin untuk melanjutkan.",
+    confirmLabel: opts.secondConfirmLabel || "Ya, saya yakin",
+    cancelLabel: opts.cancelLabel || "Batal",
+    tone: opts.tone
   });
 }
 

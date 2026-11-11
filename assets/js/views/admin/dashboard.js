@@ -272,7 +272,7 @@ export function attachAdminDashboard(context) {
 async function handleEditAttendance(attendanceId, button, refresh) {
   const record = state.attendance.find((item) => String(item.id) === String(attendanceId));
   if (!record) {
-    toast("Data absensi tidak ditemukan. Muat ulang data lalu coba lagi.", "danger");
+    toast("Data absensi tidak ditemukan. Tutup dialog lalu coba lagi.", "danger");
     return;
   }
 
@@ -303,7 +303,9 @@ async function handleDeleteAttendance(attendanceId, refresh) {
     title: "Hapus absensi",
     message: "Hapus absensi " + record.name + " tanggal " + record.date + "?",
     confirmLabel: "Hapus",
-    tone: "danger"
+    tone: "danger",
+    secondMessage:
+      "Data absensi dan foto pada hari tersebut akan dihapus permanen. Tindakan ini tidak dapat dibatalkan."
   });
   if (!confirmed) return;
 
