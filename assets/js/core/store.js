@@ -30,6 +30,12 @@ export const state = {
   suggestionLoadedFor: "",
   suggestionDraft: "",
   suggestionCategory: "umum",
+  leaderboardRows: [],
+  leaderboardLoading: false,
+  leaderboardLoadingKey: "",
+  leaderboardError: "",
+  leaderboardLoadedMonth: "",
+  leaderboardGeneratedAt: "",
   ui: {
     tab: "attendance",
     search: "",
@@ -43,6 +49,7 @@ export const state = {
     suggestionStatus: "",
     suggestionSearch: "",
     suggestionPage: 1,
+    leaderboardMonth: "",
     sidebarOpen: false
   }
 };
@@ -76,6 +83,12 @@ export function resetSessionState() {
   state.suggestionLoadedFor = "";
   state.suggestionDraft = "";
   state.suggestionCategory = "umum";
+  state.leaderboardRows = [];
+  state.leaderboardLoading = false;
+  state.leaderboardLoadingKey = "";
+  state.leaderboardError = "";
+  state.leaderboardLoadedMonth = "";
+  state.leaderboardGeneratedAt = "";
   state.ui.tab = "attendance";
   state.ui.search = "";
   state.ui.date = "";
@@ -88,5 +101,6 @@ export function resetSessionState() {
   state.ui.suggestionStatus = "";
   state.ui.suggestionSearch = "";
   state.ui.suggestionPage = 1;
+  state.ui.leaderboardMonth = "";
   state.ui.sidebarOpen = false;
 }

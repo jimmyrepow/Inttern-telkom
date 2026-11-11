@@ -15,6 +15,7 @@ import { renderAdmin, attachAdminEvents } from "./views/admin.js";
 import { renderIntern, attachInternEvents } from "./views/intern.js";
 import { renderAccount, attachAccountEvents } from "./views/account.js";
 import { renderSuggestions, attachSuggestionsEvents } from "./views/suggestions.js";
+import { renderLeaderboard, attachLeaderboardEvents } from "./views/leaderboard.js";
 import { exportData } from "./services/export.js";
 import { stopCamera } from "./services/photo.js";
 
@@ -24,6 +25,7 @@ const MOBILE_BREAKPOINT = 992;
 const NAV = {
   admin: [
     { id: "attendance", label: "Absensi", icon: "bi-calendar2-check" },
+    { id: "leaderboard", label: "Peringkat", icon: "bi-trophy" },
     { id: "users", label: "Peserta", icon: "bi-people" },
     { id: "settings", label: "Pengaturan", icon: "bi-sliders" },
     { id: "suggestions", label: "Kotak Saran", icon: "bi-chat-square-text" },
@@ -33,6 +35,7 @@ const NAV = {
   intern: [
     { id: "absen", label: "Absen Hari Ini", icon: "bi-fingerprint" },
     { id: "riwayat", label: "Riwayat", icon: "bi-clock-history" },
+    { id: "leaderboard", label: "Peringkat", icon: "bi-trophy" },
     { id: "suggestions", label: "Kotak Saran", icon: "bi-chat-square-text" },
     { id: "account", label: "Akun", icon: "bi-person-gear" },
     { id: "guide", label: "Panduan", icon: "bi-book" }
@@ -42,6 +45,7 @@ const NAV = {
 const PAGE_META = {
   admin: {
     attendance: { title: "Absensi", subtitle: "Pantau kehadiran peserta hari ini" },
+    leaderboard: { title: "Peringkat", subtitle: "Klasemen kehadiran peserta magang" },
     users: { title: "Peserta", subtitle: "Kelola akun, role, dan password" },
     settings: { title: "Pengaturan", subtitle: "Atur jam masuk, zona waktu, dan lokasi kantor" },
     suggestions: { title: "Kotak Saran", subtitle: "Baca dan tindak lanjuti masukan peserta" },
@@ -51,6 +55,7 @@ const PAGE_META = {
   intern: {
     absen: { title: "Absen Hari Ini", subtitle: "Catat kehadiran dengan GPS dan selfie" },
     riwayat: { title: "Riwayat", subtitle: "Semua absensi pribadi Anda" },
+    leaderboard: { title: "Peringkat", subtitle: "Klasemen kehadiran peserta magang" },
     suggestions: { title: "Kotak Saran", subtitle: "Kirim masukan dan lihat balasan admin" },
     account: { title: "Akun Saya", subtitle: "Ubah nama dan password akun Anda" },
     guide: { title: "Panduan", subtitle: "Cara memakai website untuk peserta" }
@@ -216,6 +221,7 @@ function canAutoRefresh() {
   if (
     state.ui.tab === "settings" ||
     state.ui.tab === "suggestions" ||
+    state.ui.tab === "leaderboard" ||
     state.ui.tab === "guide" ||
     state.ui.tab === "account"
   )
@@ -402,13 +408,16 @@ function renderDashboard() {
 
   const isAccount = state.ui.tab === "account";
   const isSuggestions = state.ui.tab === "suggestions";
+  const isLeaderboard = state.ui.tab === "leaderboard";
   const content = isAccount
     ? renderAccount()
     : isSuggestions
       ? renderSuggestions()
-      : isAdmin
-        ? renderAdmin()
-        : renderIntern();
+      : isLeaderboard
+        ? renderLeaderboard()
+        : isAdmin
+          ? renderAdmin()
+          : renderIntern();
 
   app.innerHTML = `
     <div class="app-shell ${state.ui.sidebarOpen ? "sidebar-open" : ""}" id="app-shell">
@@ -433,6 +442,8 @@ function renderDashboard() {
   if (isAccount) attachAccountEvents({ rerender: renderDashboard, refresh: refreshData, logout });
   else if (isSuggestions)
     attachSuggestionsEvents({ rerender: renderDashboard, refresh: refreshData });
+  else if (isLeaderboard)
+    attachLeaderboardEvents({ rerender: renderDashboard, refresh: refreshData });
   else if (isAdmin) attachAdminEvents({ rerender: renderDashboard, refresh: refreshData });
   else attachInternEvents({ rerender: renderDashboard, refresh: refreshData });
 }

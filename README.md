@@ -48,6 +48,7 @@ tidak dipakai.
       services/
         photo.js            kamera, kompresi, upload, hapus foto
         location.js         GPS dan tampilan lokasi
+        geofence.js         validasi radius dan akurasi GPS
         export.js           export Excel + foto tertanam
       views/
         login.js            halaman login
@@ -57,6 +58,8 @@ tidak dipakai.
           users.js          modal peserta, filter, pagination
           settings.js       pengaturan dan export
         intern.js           dashboard intern dan absensi
+        leaderboard.js      peringkat kehadiran admin dan peserta
+        suggestions.js      kotak saran admin dan peserta
         account.js          profil, avatar, pencapaian, password
         guide.js            halaman panduan penggunaan
   scripts/
@@ -76,6 +79,9 @@ tidak dipakai.
       0008_count_only_actual_check_ins.sql
       0009_self_service_account.sql
       0010_avatar_personalization.sql
+      0011_suggestion_box.sql
+      0012_geofence_attendance.sql
+      0013_attendance_leaderboard.sql
  ```
 
 ### Aturan modularisasi
@@ -151,11 +157,16 @@ otomatis dikeluarkan.
 Migrasi `0010_avatar_personalization.sql` menambahkan kolom `avatar_emoji` dan
 `avatar_color` pada tabel `users`, RPC `app_update_avatar`, serta memperbarui
 `app_bootstrap` dan `app_export_data` agar avatar ikut tersinkron.
+Migrasi `0011_suggestion_box.sql` menambahkan tabel `suggestions` dan RPC kotak
+saran untuk peserta maupun admin.
+Migrasi `0012_geofence_attendance.sql` menyimpan koordinat/akurasi/jarak absensi,
+menambahkan setting `max_accuracy_m`, dan menegakkan radius kantor serta akurasi
+GPS langsung di RPC absen.
+Migrasi `0013_attendance_leaderboard.sql` menambahkan RPC `app_leaderboard` untuk
+klasemen kehadiran per bulan atau semua waktu.
 Jika koneksi dari komputer tidak tersedia, buka Supabase Dashboard > SQL Editor,
-lalu jalankan isi file migrasi terbaru yang belum diterapkan secara berurutan
-(misalnya `0009_self_service_account.sql` lalu
-`0010_avatar_personalization.sql`). Setelah itu muat ulang aplikasi agar RPC baru
-terdeteksi.
+lalu jalankan isi file migrasi terbaru yang belum diterapkan secara berurutan.
+Setelah itu muat ulang aplikasi agar RPC baru terdeteksi.
 
 `0005_interns.sql` menambahkan akun peserta magang:
 
@@ -198,10 +209,11 @@ npm run doctor
 ```
 
 Yang diperiksa: koneksi PostgreSQL, tabel utama, bucket `attendance-photos`,
-RPC penting (`app_login`, `app_bootstrap`, `admin_reset_password`,
-`app_update_profile`, `app_change_password`, `app_update_avatar`), kolom
-password/login/avatar, daftar akun, serta uji login memakai `CHECK_LOGIN_*`.
-Status akhir harus `STATUS : OK`.
+RPC penting (`app_login`, `app_bootstrap`, `app_check_in`, `app_check_out`,
+`app_leaderboard`, `admin_reset_password`, `app_update_profile`,
+`app_change_password`, `app_update_avatar`), kolom password/login/avatar,
+kolom geofence absensi, setting akurasi GPS, daftar akun, serta uji login memakai
+`CHECK_LOGIN_*`. Status akhir harus `STATUS : OK`.
 
 ## 6. Menjalankan website
 
@@ -215,17 +227,18 @@ atau:
 npm run dev
 ```
 
-Buka `http://localhost:5501`. Jangan membuka `index.html` lewat `file://` jika
+Buka `http://localhost:5500`. Jangan membuka `index.html` lewat `file://` jika
 ingin memakai kamera dan GPS; browser hanya mengizinkan keduanya pada
 `localhost` atau HTTPS.
 
 Alur pemakaian:
 
 1. Login dengan username dan password.
-2. Admin melihat statistik, insight kehadiran, daftar absensi berpaginasi, daftar
-   peserta dengan modal tambah/edit, pengaturan, dan export Excel berisi foto.
+2. Admin melihat statistik, insight kehadiran, daftar absensi berpaginasi,
+   peringkat peserta, daftar peserta dengan modal tambah/edit, pengaturan, dan
+   export Excel berisi foto.
 3. Intern melihat status hari ini, form absen masuk/pulang, GPS, selfie, insight
-   kehadiran bulanan, riwayat pribadi, dan lencana pencapaian.
+   kehadiran bulanan, riwayat pribadi, peringkat, dan lencana pencapaian.
 4. Semua pengguna dapat membuka menu **Akun** untuk mengubah nama, avatar, dan
    password sendiri.
 
@@ -244,8 +257,8 @@ token sebagai `p_token`; server memvalidasinya ke tabel `public.sessions`.
 - Layout mobile-first: tabel beralih menjadi kartu di HP, grid statistik menjadi
   3 kolom di tablet, dan desktop memakai sidebar penuh dengan konten yang
   dibatasi lebarnya.
-- Menu **Panduan** memuat langkah penggunaan sesuai peran, keamanan akun,
-  sinkronisasi, serta solusi untuk kendala GPS, kamera, dan login.
+- Menu **Panduan** memuat langkah penggunaan sesuai peran, peringkat kehadiran,
+  keamanan akun, sinkronisasi, serta solusi untuk kendala GPS, kamera, dan login.
 
 ### Panduan singkat peserta
 
@@ -256,8 +269,11 @@ token sebagai `p_token`; server memvalidasinya ke tabel `public.sessions`.
    **17:00**, mengikuti zona waktu aplikasi). Sebelum waktunya, tombol
    dinonaktifkan dan server juga menolak permintaan pulang lebih awal.
 4. Buka **Riwayat** untuk memeriksa catatan kehadiran milik sendiri dan melihat
-   insight ketepatan waktu per bulan.
-5. Buka **Akun** untuk mengganti nama, memilih avatar emoji/warna, melihat
+   insight ketepatan waktu per bulan, atau **Peringkat** untuk membandingkan poin
+   kehadiran dengan peserta lain.
+5. Buka **Kotak Saran** untuk mengirim masukan berkategori dan melihat status
+   serta balasan admin.
+6. Buka **Akun** untuk mengganti nama, memilih avatar emoji/warna, melihat
    lencana pencapaian, atau mengganti password. Isi password lama, password baru,
    dan konfirmasi; indikator kekuatan password membantu memilih password yang
    aman. Jika lupa password lama, minta admin melakukan reset.
@@ -270,9 +286,13 @@ token sebagai `p_token`; server memvalidasinya ke tabel `public.sessions`.
 2. Buka **Absensi** untuk mencari dan memfilter catatan peserta; gunakan
    **Export** untuk mengunduh laporan Excel dengan foto masuk/pulang tertanam.
 3. Buka **Pengaturan** untuk mengatur batas telat masuk, jam mulai absen pulang,
-   zona waktu, dan lokasi/radius kantor. Jam pulang default **17:00** dan dapat
-   diubah oleh admin.
-4. Buka **Panduan** kapan saja untuk langkah rinci dan pemecahan masalah.
+   zona waktu, lokasi/radius kantor, dan akurasi GPS maksimal. Jam pulang default
+   **17:00** dan dapat diubah oleh admin.
+4. Buka **Peringkat** untuk melihat klasemen kehadiran; gunakan filter bulan atau
+   **Semua waktu**. Poin: hadir 10, tepat waktu +5, pulang lengkap +2.
+5. Buka **Kotak Saran** untuk membaca masukan peserta, membalas, mengubah status,
+   atau menghapus saran.
+6. Buka **Panduan** kapan saja untuk langkah rinci dan pemecahan masalah.
 
 ## 8. Password dan akun
 
@@ -306,7 +326,11 @@ token sebagai `p_token`; server memvalidasinya ke tabel `public.sessions`.
   - Tambah/edit peserta lewat modal, reset password, aktif/nonaktifkan akun,
     pencarian, filter role, dan pagination daftar peserta.
   - Hapus satu absensi, hapus seluruh absensi peserta, hapus akun.
-  - Pengaturan nama aplikasi, batas telat, jam mulai pulang, zona waktu, kantor, radius.
+  - Pengaturan nama aplikasi, batas telat, jam mulai pulang, zona waktu, kantor,
+    radius, dan akurasi GPS maksimal.
+  - Peringkat kehadiran per bulan atau semua waktu dengan poin hadir, tepat waktu,
+    dan pulang lengkap.
+  - Kotak saran: ringkasan status, pencarian, filter, balasan admin, dan hapus.
   - Export Excel (Absensi dengan foto tertanam, Akun, Pengaturan, Log).
 - Dashboard intern:
   - Absen masuk dan pulang.
@@ -315,6 +339,8 @@ token sebagai `p_token`; server memvalidasinya ke tabel `public.sessions`.
   - Kamera browser atau upload foto; foto dikompres ke JPEG.
   - Riwayat absensi pribadi di halaman terpisah.
   - Insight kehadiran per bulan dan filter bulan pada riwayat.
+  - Peringkat kehadiran peserta dengan penanda posisi sendiri.
+  - Kotak saran dengan kategori, status, dan balasan admin.
 - Menu **Akun** untuk semua pengguna:
   - Ringkasan akun: role, status, login terakhir, dan waktu password diubah.
   - Ubah nama tampilan.
@@ -323,6 +349,7 @@ token sebagai `p_token`; server memvalidasinya ke tabel `public.sessions`.
   - Ubah password dengan verifikasi password lama, indikator kekuatan, dan
     daftar syarat interaktif; sesi perangkat lain otomatis dikeluarkan.
 - Panduan penggunaan bawaan untuk intern dan admin.
+- Credit aplikasi tampil di halaman login dan footer dashboard.
 - Auto-refresh data setiap 30 detik saat tab aktif.
 - Tampilan responsif mobile, tablet, dan desktop dengan tema pink TELKOM AKSES.
 

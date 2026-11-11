@@ -6,8 +6,8 @@ export function renderGuide(role) {
         <span class="guide-kicker"><i class="bi bi-book"></i> Panduan penggunaan</span>
         <h2>${isAdmin ? "Panduan Admin" : "Panduan Peserta Magang"}</h2>
         <p>${isAdmin
-          ? "Kelola peserta, pantau dan koreksi absensi, atur jam masuk/pulang, radius GPS, dan unduh rekap Excel."
-          : "Cara absen masuk dan pulang dengan GPS radius kantor, memakai kamera wajib, dan melihat riwayat."}</p>
+          ? "Kelola peserta, pantau dan koreksi absensi, atur jam masuk/pulang, radius GPS, lihat peringkat, dan unduh rekap Excel."
+          : "Cara absen masuk dan pulang dengan GPS radius kantor, memakai kamera wajib, melihat riwayat, dan memantau peringkat."}</p>
       </div>
       <div class="guide-hero-art" aria-hidden="true">
         <i class="bi ${isAdmin ? "bi-speedometer2" : "bi-fingerprint"}"></i>
@@ -64,6 +64,15 @@ export function renderGuide(role) {
       </div>
 
       <section class="guide-card">
+        <h3><span class="guide-icon"><i class="bi bi-chat-square-text"></i></span> Kotak saran</h3>
+        <ol class="guide-steps">
+          <li><span>1</span><div><strong>Buka menu Kotak Saran</strong><p>Lihat ringkasan status Baru, Dibaca, Diproses, dan Selesai. Gunakan pencarian atau filter status untuk menemukan saran.</p></div></li>
+          <li><span>2</span><div><strong>Balas saran</strong><p>Tekan <em>Balas</em>, pilih status tindak lanjut, lalu tulis balasan maksimal 2000 karakter. Simpan setelah memeriksa ringkasan konfirmasi.</p></div></li>
+          <li><span>3</span><div><strong>Hapus bila perlu</strong><p>Tombol Hapus menghapus saran dan balasannya secara permanen. Konfirmasi hanya dilakukan setelah admin memilih <em>Hapus saran</em>.</p></div></li>
+        </ol>
+      </section>
+
+      <section class="guide-card">
         <h3><span class="guide-icon"><i class="bi bi-file-earmark-excel"></i></span> Rekap dan export</h3>
         <div class="guide-two-col">
           <div>
@@ -85,6 +94,10 @@ export function renderGuide(role) {
           <div>
             <h4>Insight harian</h4>
             <p>Kartu <strong>Insight hari ini</strong> menampilkan persentase kehadiran, perbandingan tepat waktu dan telat, serta jumlah peserta yang belum absen. Gunakan angka ini untuk memantau kehadiran dengan cepat.</p>
+          </div>
+          <div>
+            <h4>Peringkat peserta</h4>
+            <p>Menu <strong>Peringkat</strong> menampilkan klasemen kehadiran. Poin dihitung dari hari hadir (10), bonus tepat waktu (5), dan absen pulang lengkap (2). Gunakan filter bulan atau <em>Semua waktu</em> untuk melihat periode lain.</p>
           </div>
         </div>
       </section>
@@ -109,7 +122,19 @@ export function renderGuide(role) {
         </section>
 
         <section class="guide-card">
-          <h3><span class="guide-icon"><i class="bi bi-trophy"></i></span> Avatar dan pencapaian</h3>
+          <h3><span class="guide-icon"><i class="bi bi-trophy"></i></span> Peringkat kehadiran</h3>
+          <p>Menu <strong>Peringkat</strong> menampilkan klasemen seluruh peserta magang. Poin berasal dari hari hadir (<strong>10 poin</strong>), bonus tepat waktu (<strong>+5 poin</strong>), dan absen pulang lengkap (<strong>+2 poin</strong>).</p>
+          <p class="mb-0">Gunakan filter bulan untuk melihat peringkat bulan tertentu atau <em>Semua waktu</em> untuk akumulasi. Baris dan kartu bertanda <strong>Anda</strong> menunjukkan posisi Anda sendiri.</p>
+        </section>
+
+        <section class="guide-card">
+          <h3><span class="guide-icon"><i class="bi bi-chat-square-text"></i></span> Kotak saran</h3>
+          <p>Menu <strong>Kotak Saran</strong> menyediakan formulir masukan dengan kategori Umum, Absensi, Tampilan, Fitur, Bug, atau Lainnya. Isi saran 5–1500 karakter lalu konfirmasi pengiriman.</p>
+          <p class="mb-0">Saran yang sudah dikirim tampil di daftar beserta status dan balasan admin. Tekan <em>Muat ulang</em> untuk mengambil pembaruan terbaru.</p>
+        </section>
+
+        <section class="guide-card">
+          <h3><span class="guide-icon"><i class="bi bi-person-badge"></i></span> Avatar dan pencapaian</h3>
           <p>Buka menu <strong>Akun</strong>, lalu tekan <em>Ubah avatar</em> untuk memilih emoji dan warna. Avatar tampil di menu, header, dan daftar peserta admin.</p>
           <p class="mb-0">Kartu <strong>Pencapaian saya</strong> menampilkan lencana yang terbuka dari kebiasaan absen: langkah pertama, tepat waktu, rajin, disiplin bulan ini, dan streak. Lencana terbuka otomatis saat target tercapai.</p>
         </section>

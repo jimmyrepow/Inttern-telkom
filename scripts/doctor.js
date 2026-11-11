@@ -25,6 +25,7 @@ const REQUIRED_FUNCTIONS = [
   "admin_list_suggestions",
   "admin_update_suggestion",
   "admin_delete_suggestion",
+  "app_leaderboard",
   "attendance_geofence_distance",
   "require_user",
   "require_admin",
