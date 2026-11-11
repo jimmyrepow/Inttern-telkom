@@ -22,7 +22,11 @@ export async function rpc(name, params) {
   const payload = Object.assign({}, params || {});
   if (state.token && name !== "app_login") payload.p_token = state.token;
   const { data, error } = await sb.rpc(name, payload);
-  if (error) throw new Error(error.message || "Permintaan gagal.");
+  if (error) {
+    throw Object.assign(new Error(error.message || "Permintaan gagal."), {
+      code: error.code || ""
+    });
+  }
   return data;
 }
 
@@ -42,7 +46,26 @@ export function authErrorMessage(error) {
 }
 
 export function handleError(error) {
+  const code = String((error && error.code) || "");
   const message = (error && error.message) || "Terjadi kesalahan.";
+  if (
+    /could not find the function .*admin_update_attendance|function .*admin_update_attendance.* does not exist/i.test(
+      message
+    )
+  ) {
+    toast(
+      "Fitur edit absensi belum tersedia di database. Jalankan npm run migrate pada database Supabase yang digunakan aplikasi, lalu muat ulang halaman.",
+      "danger"
+    );
+    return;
+  }
+  if (code === "42501" && /admin_update_attendance/i.test(message)) {
+    toast(
+      "Database menolak izin edit absensi. Pastikan migrasi terbaru sudah diterapkan dan Anda login sebagai admin.",
+      "danger"
+    );
+    return;
+  }
   if (isSessionExpired(message)) {
     if (sessionExpiredHandler) sessionExpiredHandler("Sesi berakhir. Silakan login ulang.");
     return;

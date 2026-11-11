@@ -173,6 +173,39 @@ async function main() {
     console.log("RPC      :", missing.length ? "HILANG: " + missing.join(", ") : "lengkap");
     if (missing.length) ok = false;
 
+    const attendanceEditRpc = await client.query(
+      `select exists (
+         select 1
+         from pg_proc p
+         join pg_namespace n on n.oid = p.pronamespace
+         where n.nspname = 'public'
+           and p.proname = 'admin_update_attendance'
+           and pg_get_function_identity_arguments(p.oid) =
+             'p_token text, p_id uuid, p_check_in text, p_check_out text, p_status text'
+       ) as valid`
+    );
+    if (!attendanceEditRpc.rows[0].valid) {
+      console.log(
+        "Edit absensi: RPC admin_update_attendance belum tersedia atau argumennya berbeda."
+      );
+      ok = false;
+    } else {
+      console.log("Edit absensi: RPC dan argumen lengkap");
+    }
+
+    const checkoutSetting = await client.query(
+      "select value from public.settings where key = 'checkout_limit'"
+    );
+    if (
+      !checkoutSetting.rows[0] ||
+      !/^([01]\d|2[0-3]):[0-5]\d$/.test(checkoutSetting.rows[0].value)
+    ) {
+      console.log("Jam pulang: checkout_limit belum tersedia atau formatnya bukan HH:MM.");
+      ok = false;
+    } else {
+      console.log("Jam pulang:", checkoutSetting.rows[0].value);
+    }
+
     const userList = await client.query(
       "select username, role, active, last_login_at from public.users order by role, username"
     );

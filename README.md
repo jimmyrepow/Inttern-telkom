@@ -120,6 +120,9 @@ Migrasi `0006_attendance_edit_and_checkout_limit.sql` menambahkan batas jam
 pulang dengan nilai awal `17:00`, validasi pulang di database, dan RPC admin
 untuk mengoreksi status serta jam masuk/pulang. Terapkan dengan `npm run migrate`,
 lalu verifikasi dengan `npm run migrate:status`.
+Jika koneksi dari komputer tidak tersedia, buka Supabase Dashboard > SQL Editor
+dan jalankan isi file migrasi `0006_attendance_edit_and_checkout_limit.sql`,
+lalu muat ulang aplikasi agar RPC baru terdeteksi.
 
 `0005_interns.sql` menambahkan akun peserta magang:
 
