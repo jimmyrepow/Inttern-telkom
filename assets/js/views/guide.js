@@ -1,0 +1,174 @@
+export function renderGuide(role) {
+  const isAdmin = String(role || "").toLowerCase() === "admin";
+  return `
+    <section class="guide-hero">
+      <div>
+        <span class="guide-kicker"><i class="bi bi-book"></i> Panduan penggunaan</span>
+        <h2>${isAdmin ? "Panduan Admin" : "Panduan Peserta Magang"}</h2>
+        <p>${isAdmin
+          ? "Kelola peserta, pantau absensi, atur jam masuk, dan unduh rekap Excel."
+          : "Cara absen masuk dan pulang, mengambil GPS, memakai kamera, dan melihat riwayat."}</p>
+      </div>
+      <div class="guide-hero-art" aria-hidden="true">
+        <i class="bi ${isAdmin ? "bi-speedometer2" : "bi-fingerprint"}"></i>
+      </div>
+    </section>
+
+    <div class="guide-grid">
+      <section class="guide-card">
+        <h3><span class="guide-icon"><i class="bi bi-rocket-takeoff"></i></span> Mulai cepat</h3>
+        <ol class="guide-steps">
+          <li><span>1</span><div><strong>Login</strong><p>Masuk dengan username dan password yang diberikan admin.</p></div></li>
+          <li><span>2</span><div><strong>Pilih menu</strong><p>Gunakan sidebar di kiri. Di HP, tekan tombol menu di pojok kiri atas.</p></div></li>
+          <li><span>3</span><div><strong>Ikuti status</strong><p>Setiap aksi menampilkan toast di pojok layar: hijau berhasil, merah gagal, biru informasi.</p></div></li>
+        </ol>
+      </section>
+
+      <section class="guide-card">
+        <h3><span class="guide-icon"><i class="bi bi-bell"></i></span> Arti notifikasi</h3>
+        <ul class="guide-list">
+          <li><span class="dot dot-success"></span><div><strong>Toast hijau</strong><p>Data berhasil disimpan atau dikirim.</p></div></li>
+          <li><span class="dot dot-danger"></span><div><strong>Toast merah</strong><p>Ada kesalahan. Baca pesannya lalu coba lagi.</p></div></li>
+          <li><span class="dot dot-info"></span><div><strong>Modal konfirmasi</strong><p>Muncul sebelum menghapus data. Pilih <em>Batal</em> bila ragu.</p></div></li>
+          <li><span class="dot dot-warning"></span><div><strong>Modal password</strong><p>Dipakai admin saat reset password. Isi dua kali lalu simpan.</p></div></li>
+        </ul>
+      </section>
+    </div>
+
+    ${
+      isAdmin
+        ? `
+      <div class="guide-grid">
+        <section class="guide-card">
+          <h3><span class="guide-icon"><i class="bi bi-people"></i></span> Mengelola peserta</h3>
+          <ol class="guide-steps">
+            <li><span>1</span><div><strong>Buka menu Peserta</strong><p>Lihat daftar akun, status aktif, dan waktu login terakhir.</p></div></li>
+            <li><span>2</span><div><strong>Tambah atau edit</strong><p>Isi nama, username, password, role, lalu simpan. Username tidak boleh sama.</p></div></li>
+            <li><span>3</span><div><strong>Reset password</strong><p>Tekan tombol Reset password. Modal sudah terisi pola <code>username123</code>; ganti bila perlu.</p></div></li>
+          </ol>
+          <div class="guide-note"><i class="bi bi-info-circle"></i><span>Pola akun peserta: username = nama depan, password = nama depan + <code>123</code>. Contoh <code>nayla</code> / <code>nayla123</code>.</span></div>
+        </section>
+
+        <section class="guide-card">
+          <h3><span class="guide-icon"><i class="bi bi-sliders"></i></span> Pengaturan absensi</h3>
+          <dl class="guide-settings">
+            <dt>Batas absen masuk</dt><dd>Jam batas tepat waktu. Absen setelah jam ini ditandai telat. Contoh <code>08:15</code>.</dd>
+            <dt>Zona waktu</dt><dd>Gunakan format <code>Asia/Jakarta</code>, <code>Asia/Makassar</code>, atau <code>Asia/Jayapura</code>.</dd>
+            <dt>Koordinat kantor</dt><dd>Isi latitude dan longitude berpasangan. Bisa disalin dari Google Maps; periksa kembali sebelum menyimpan.</dd>
+            <dt>Radius absensi</dt><dd>Isi nilai sesuai kebijakan kantor. Pada backend saat ini, nilai radius belum memblokir absensi di luar area, jadi jangan mengandalkannya sebagai pembatas lokasi.</dd>
+          </dl>
+          <div class="guide-note"><i class="bi bi-lightbulb"></i><span>Perubahan pengaturan tersimpan di server. Perubahan batas jam dan zona waktu digunakan pada pencatatan absensi berikutnya.</span></div>
+        </section>
+      </div>
+
+      <section class="guide-card">
+        <h3><span class="guide-icon"><i class="bi bi-file-earmark-excel"></i></span> Rekap dan export</h3>
+        <div class="guide-two-col">
+          <div>
+            <h4>Melihat rekap</h4>
+            <p>Menu Absensi menampilkan seluruh absensi. Gunakan pencarian, filter tanggal, dan filter status untuk mempersempit data.</p>
+          </div>
+          <div>
+            <h4>Export Excel</h4>
+            <p>Tekan Export Excel di header atau di menu Pengaturan. File berisi sheet Users, Attendance, Settings, dan Logs.</p>
+          </div>
+          <div>
+            <h4>Hapus data</h4>
+            <p>Hapus satu absensi lewat tombol Hapus di tabel. Hapus seluruh absensi peserta lewat menu Peserta. Semua penghapusan memakai modal konfirmasi.</p>
+          </div>
+          <div>
+            <h4>Akun nonaktif</h4>
+            <p>Hilangkan centang Aktif saat mengedit peserta. Akun tidak bisa login, tetapi data absensinya tetap tersimpan.</p>
+          </div>
+        </div>
+      </section>
+    `
+        : `
+      <section class="guide-card">
+        <h3><span class="guide-icon"><i class="bi bi-fingerprint"></i></span> Cara absen yang benar</h3>
+        <ol class="guide-steps">
+          <li><span>1</span><div><strong>Ambil lokasi (disarankan)</strong><p>Tekan <em>Ambil GPS</em> lalu izinkan akses lokasi. Tunggu sampai koordinat dan akurasi muncul. Jika gagal, absensi tetap dapat disimpan dan lokasi ditandai belum tersedia.</p></div></li>
+          <li><span>2</span><div><strong>Tambahkan foto (opsional)</strong><p>Foto tidak wajib diisi. Jika kebijakan kantor memerlukannya, gunakan <em>Kamera Perangkat</em> untuk membuka kamera HP atau <em>Kamera Browser</em> untuk pratinjau langsung.</p></div></li>
+          <li><span>3</span><div><strong>Isi catatan (opsional)</strong><p>Contoh: WFO, izin, atau keterangan tambahan. Maksimal 500 karakter.</p></div></li>
+          <li><span>4</span><div><strong>Tekan Absen Masuk</strong><p>Setelah berhasil, tombol berubah menjadi <em>Sudah Absen Masuk</em>. Saat pulang, tekan <em>Absen Pulang</em>.</p></div></li>
+        </ol>
+        <div class="guide-note"><i class="bi bi-camera"></i><span>Jika izin kamera tidak muncul, buka lewat <code>http://localhost</code> atau HTTPS, lalu izinkan kamera lewat ikon gembok di address bar.</span></div>
+      </section>
+
+      <div class="guide-grid">
+        <section class="guide-card">
+          <h3><span class="guide-icon"><i class="bi bi-clock-history"></i></span> Riwayat absensi</h3>
+          <p>Menu Riwayat menampilkan absensi pribadi: tanggal, jam masuk, jam pulang, status tepat waktu/telat, dan foto.</p>
+          <p class="mb-0">Data terbaru muncul paling atas. Tekan thumbnail foto untuk membukanya di tab baru.</p>
+        </section>
+
+        <section class="guide-card">
+          <h3><span class="guide-icon"><i class="bi bi-shield-check"></i></span> Keamanan akun</h3>
+          <ul class="guide-list guide-list-compact">
+            <li><i class="bi bi-check2-circle"></i><span>Jangan bagikan password ke orang lain.</span></li>
+            <li><i class="bi bi-check2-circle"></i><span>Selalu keluar setelah memakai perangkat bersama.</span></li>
+            <li><i class="bi bi-check2-circle"></i><span>Lupa password? Minta admin melakukan reset.</span></li>
+            <li><i class="bi bi-check2-circle"></i><span>Sesi berlaku 12 jam; setelah itu login ulang.</span></li>
+          </ul>
+        </section>
+      </div>
+    `
+    }
+
+    <section class="guide-card">
+      <h3><span class="guide-icon"><i class="bi bi-question-circle"></i></span> Pertanyaan yang sering muncul</h3>
+      <div class="accordion guide-faq" id="guide-faq">
+        <div class="accordion-item">
+          <h4 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq-camera" aria-expanded="false" aria-controls="faq-camera">Kamera tidak muncul, apa yang harus dilakukan?</button>
+          </h4>
+          <div id="faq-camera" class="accordion-collapse collapse" data-bs-parent="#guide-faq">
+            <div class="accordion-body">Pastikan halaman dibuka lewat <code>localhost</code> atau HTTPS, izinkan kamera di browser, dan tutup aplikasi lain yang sedang memakai kamera. Alternatifnya gunakan tombol <em>Kamera Perangkat</em> atau <em>Upload Foto</em>.</div>
+          </div>
+        </div>
+        <div class="accordion-item">
+          <h4 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq-gps" aria-expanded="false" aria-controls="faq-gps">Lokasi GPS gagal diambil</button>
+          </h4>
+          <div id="faq-gps" class="accordion-collapse collapse" data-bs-parent="#guide-faq">
+            <div class="accordion-body">Aktifkan lokasi di pengaturan HP dan izinkan browser mengakses lokasi. Jika tetap gagal, coba di area terbuka atau gunakan koneksi internet yang stabil. Absensi masih bisa disimpan, tetapi lokasi akan tercatat belum tersedia.</div>
+          </div>
+        </div>
+        <div class="accordion-item">
+          <h4 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq-session" aria-expanded="false" aria-controls="faq-session">Muncul pesan sesi berakhir</button>
+          </h4>
+          <div id="faq-session" class="accordion-collapse collapse" data-bs-parent="#guide-faq">
+            <div class="accordion-body">Sesi berlaku 12 jam. Login ulang dengan username dan password yang sama. Jika masih gagal, hubungi admin untuk memastikan akun masih aktif.</div>
+          </div>
+        </div>
+        <div class="accordion-item">
+          <h4 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq-password" aria-expanded="false" aria-controls="faq-password">Lupa password</button>
+          </h4>
+          <div id="faq-password" class="accordion-collapse collapse" data-bs-parent="#guide-faq">
+            <div class="accordion-body">Password tidak bisa dilihat kembali karena disimpan sebagai hash. Minta admin membuka menu <strong>Peserta</strong> lalu menekan <strong>Reset password</strong>.</div>
+          </div>
+        </div>
+        <div class="accordion-item">
+          <h4 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq-stale" aria-expanded="false" aria-controls="faq-stale">Data tidak berubah setelah disimpan</button>
+          </h4>
+          <div id="faq-stale" class="accordion-collapse collapse" data-bs-parent="#guide-faq">
+            <div class="accordion-body">Tekan tombol muat ulang di header. Data juga diperbarui otomatis setiap 30 detik saat tab aktif. Pastikan koneksi internet stabil.</div>
+          </div>
+        </div>
+        <div class="accordion-item">
+          <h4 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq-export" aria-expanded="false" aria-controls="faq-export">Export Excel tidak berjalan</button>
+          </h4>
+          <div id="faq-export" class="accordion-collapse collapse" data-bs-parent="#guide-faq">
+            <div class="accordion-body">Pastikan login sebagai admin dan koneksi stabil. Tunggu hingga toast “File Excel berhasil dibuat” muncul. Jika library belum termuat, muat ulang halaman lalu coba lagi.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <p class="guide-footer">Butuh bantuan lain? Hubungi admin TELKOM AKSES dan sertakan tangkapan layar pesan kesalahan.</p>
+  `;
+}

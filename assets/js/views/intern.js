@@ -1,0 +1,314 @@
+import { state } from "../core/store.js";
+import { rpc, handleError, sb } from "../core/api.js";
+import { PHOTO_BUCKET } from "../core/config.js";
+import { esc, toast, withBusy } from "../lib/dom.js";
+import { getTodayDate, shortTime, statusBadge } from "../lib/format.js";
+import { statCard, renderPhoto } from "../lib/render.js";
+import {
+  renderSelfiePreview,
+  startCamera,
+  stopCamera,
+  capturePhoto,
+  handlePhotoUpload,
+  updateSelfieUi,
+  uploadPhoto
+} from "../services/photo.js";
+import { renderLocationDisplay, requestLocation } from "../services/location.js";
+import { renderGuide } from "./guide.js";
+
+export function renderIntern() {
+  if (state.ui.tab === "guide") return renderGuide("intern");
+
+  const history = state.attendance
+    .filter((row) => String(row.user_id) === String(state.user.id))
+    .sort((a, b) =>
+      (String(b.date) + " " + String(b.check_in || "")).localeCompare(
+        String(a.date) + " " + String(a.check_in || "")
+      )
+    );
+
+  if (state.ui.tab === "riwayat") return renderHistoryView(history);
+  return renderAbsenView(history);
+}
+
+function renderAbsenView(history) {
+  const today = getTodayDate();
+  const user = state.user;
+  const todayRow = history.find((row) => String(row.date) === today);
+  const hasIn = Boolean(todayRow && todayRow.check_in);
+  const hasOut = Boolean(todayRow && todayRow.check_out);
+  const settings = state.settings || {};
+  const lateLimit = settings.late_limit || "08:15";
+  const timezone = settings.timezone || "Asia/Jakarta";
+  const recent = history.slice(0, 6);
+
+  return `
+    <div class="stats-grid mb-4">
+      ${statCard("Status hari ini", hasIn ? (hasOut ? "Selesai" : "Sudah masuk") : "Belum absen", today)}
+      ${statCard("Keterlambatan", todayRow ? (todayRow.status === "late" ? "Telat" : "Tepat waktu") : "-")}
+      ${statCard("GPS", state.currentLocation ? "Aktif" : "Belum", "", "gps-stat")}
+      ${statCard("Selfie", state.selfieData ? "Siap" : "Kosong", "", "selfie-stat")}
+    </div>
+    <div class="row g-3">
+      <div class="col-12 col-xl-7" id="absen-card">
+        <div class="card rounded-4 border-0 shadow-sm h-100">
+          <div class="card-body p-3 p-md-4">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+              <div>
+                <h2 class="h5 fw-bold mb-1">Absen hari ini</h2>
+                <div class="small text-secondary">Batas absen masuk <span class="fw-semibold text-dark">${esc(lateLimit)}</span> &middot; Zona waktu <span class="fw-semibold text-dark">${esc(timezone)}</span></div>
+              </div>
+              <span class="badge badge-soft rounded-pill px-3 py-2">${esc(today)}</span>
+            </div>
+            ${hasIn && hasOut ? '<div class="alert alert-success small">Absensi hari ini sudah lengkap. Terima kasih.</div>' : ""}
+            <div class="location-box mb-3">
+              <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+                <strong class="small">Lokasi GPS</strong>
+                <button class="btn btn-sm btn-outline-primary rounded-pill" id="location-btn" type="button">Ambil GPS</button>
+              </div>
+              <div id="location-display" class="small text-secondary">${renderLocationDisplay()}</div>
+            </div>
+            <div class="selfie-preview" id="selfie-preview-box">${renderSelfiePreview()}</div>
+            <video id="selfie-video" autoplay playsinline muted class="d-none w-100 rounded-4 mt-2"></video>
+            <div class="d-flex flex-wrap gap-2 mt-2">
+              <label class="btn btn-primary rounded-pill mb-0" for="photo-input">Kamera Perangkat</label>
+              <button class="btn btn-outline-primary rounded-pill" id="camera-btn" type="button">Kamera Browser</button>
+              <button class="btn btn-outline-dark rounded-pill d-none" id="capture-btn" type="button">Ambil Foto</button>
+              <label class="btn btn-outline-dark rounded-pill mb-0" for="photo-input">Upload Foto</label>
+              <input id="photo-input" type="file" accept="image/*" capture="user" class="d-none" />
+              <button class="btn btn-outline-danger rounded-pill ${state.selfieData ? "" : "d-none"}" id="clear-photo-btn" type="button">Hapus Foto</button>
+            </div>
+            <div class="small text-secondary mt-2">Jika izin kamera tidak muncul, gunakan <span class="fw-semibold">Kamera Perangkat</span> atau izinkan kamera lewat ikon gembok di address bar.</div>
+            <div class="mt-3">
+              <label class="form-label small fw-semibold" for="attendance-note">Catatan (opsional)</label>
+              <textarea id="attendance-note" class="form-control rounded-3" rows="2" maxlength="500" placeholder="Contoh: WFO / izin / keterangan tambahan">${esc(state.note)}</textarea>
+            </div>
+            <div class="d-flex flex-wrap gap-2 mt-3">
+              <button class="btn btn-primary flex-fill rounded-3" id="check-in-btn" type="button" ${hasIn ? "disabled" : ""}>${hasIn ? "Sudah Absen Masuk" : "Absen Masuk"}</button>
+              <button class="btn btn-danger flex-fill rounded-3" id="check-out-btn" type="button" ${!hasIn || hasOut ? "disabled" : ""}>${hasOut ? "Sudah Absen Pulang" : "Absen Pulang"}</button>
+            </div>
+            ${todayRow ? '<div class="small text-secondary mt-3">Absen hari ini: masuk ' + esc(shortTime(todayRow.check_in)) + " &middot; pulang " + esc(shortTime(todayRow.check_out)) + " &middot; " + statusBadge(todayRow.status) + "</div>" : ""}
+          </div>
+        </div>
+      </div>
+      <div class="col-12 col-xl-5" id="riwayat-card">
+        <div class="card rounded-4 border-0 shadow-sm h-100">
+          <div class="card-body p-3 p-md-4">
+            <div class="d-flex justify-content-between align-items-center gap-2 mb-3">
+              <div>
+                <h2 class="h5 fw-bold mb-0">Riwayat terbaru</h2>
+                <div class="small text-secondary">${history.length} total absensi</div>
+              </div>
+              <button class="btn btn-sm btn-outline-primary rounded-pill" type="button" data-nav="riwayat">Lihat semua</button>
+            </div>
+            <div class="table-responsive">
+              <table class="table table-sm align-middle table-stack mb-0">
+                <thead>
+                  <tr>
+                    <th>Tgl</th>
+                    <th>Masuk</th>
+                    <th>Pulang</th>
+                    <th>Status</th>
+                    <th>Foto</th>
+                  </tr>
+                </thead>
+                <tbody>${renderInternHistory(recent)}</tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderHistoryView(history) {
+  const total = history.length;
+  const late = history.filter((row) => row.status === "late").length;
+  const onTime = history.filter((row) => row.status !== "late").length;
+  const last = history[0];
+
+  return `
+    <div class="stats-grid mb-4">
+      ${statCard("Total absensi", total, "Seluruh riwayat")}
+      ${statCard("Tepat waktu", onTime)}
+      ${statCard("Telat", late)}
+      ${statCard("Absensi terakhir", last ? last.date : "-", last ? shortTime(last.check_in) : "Belum ada")}
+    </div>
+    <div class="card rounded-4 border-0 shadow-sm">
+      <div class="card-body p-3 p-md-4">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+          <div>
+            <h2 class="h5 fw-bold mb-1">Riwayat absensi</h2>
+            <div class="small text-secondary">${total} data, terbaru di atas</div>
+          </div>
+          <button class="btn btn-primary btn-sm rounded-pill" type="button" data-nav="absen">Absen sekarang</button>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle table-stack">
+            <thead>
+              <tr>
+                <th>Tanggal</th>
+                <th>Masuk</th>
+                <th>Pulang</th>
+                <th>Status</th>
+                <th>Foto masuk</th>
+                <th>Foto pulang</th>
+              </tr>
+            </thead>
+            <tbody>${renderInternFullHistory(history.slice(0, 30))}</tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderInternHistory(rows) {
+  if (!rows.length) {
+    return '<tr><td colspan="5" class="text-center text-secondary py-4">Belum ada riwayat absensi.</td></tr>';
+  }
+  return rows
+    .map((row) => {
+      const photos = renderPhoto(row.photo_url) + " " + renderPhoto(row.photo_out_url);
+      return `
+        <tr>
+          <td class="text-nowrap" data-label="Tanggal">${esc(row.date)}</td>
+          <td data-label="Masuk">${esc(shortTime(row.check_in))}</td>
+          <td data-label="Pulang">${esc(shortTime(row.check_out))}</td>
+          <td data-label="Status">${statusBadge(row.status)}</td>
+          <td class="text-nowrap" data-label="Foto">${photos}</td>
+        </tr>
+      `;
+    })
+    .join("");
+}
+
+function renderInternFullHistory(rows) {
+  if (!rows.length) {
+    return '<tr><td colspan="6" class="text-center text-secondary py-4">Belum ada riwayat absensi.</td></tr>';
+  }
+  return rows
+    .map(
+      (row) => `
+      <tr>
+        <td class="text-nowrap" data-label="Tanggal">${esc(row.date)}</td>
+        <td data-label="Masuk">${esc(shortTime(row.check_in))}</td>
+        <td data-label="Pulang">${esc(shortTime(row.check_out))}</td>
+        <td data-label="Status">${statusBadge(row.status)}</td>
+        <td data-label="Foto masuk">${renderPhoto(row.photo_url)}</td>
+        <td data-label="Foto pulang">${renderPhoto(row.photo_out_url)}</td>
+      </tr>
+    `
+    )
+    .join("");
+}
+
+export function attachInternEvents(context) {
+  const refresh = context.refresh;
+
+  const locationBtn = document.getElementById("location-btn");
+  if (locationBtn) locationBtn.addEventListener("click", requestLocation);
+
+  const cameraBtn = document.getElementById("camera-btn");
+  if (cameraBtn) {
+    cameraBtn.addEventListener("click", () => {
+      if (state.cameraStream) stopCamera();
+      else startCamera();
+    });
+  }
+
+  const captureBtn = document.getElementById("capture-btn");
+  if (captureBtn) captureBtn.addEventListener("click", capturePhoto);
+
+  const photoInput = document.getElementById("photo-input");
+  if (photoInput) photoInput.addEventListener("change", handlePhotoUpload);
+
+  const clearBtn = document.getElementById("clear-photo-btn");
+  if (clearBtn) {
+    clearBtn.addEventListener("click", () => {
+      state.selfieData = "";
+      state.selfieBlob = null;
+      stopCamera();
+      updateSelfieUi();
+      toast("Foto dihapus.", "info");
+    });
+  }
+
+  const note = document.getElementById("attendance-note");
+  if (note) {
+    note.addEventListener("input", () => {
+      state.note = note.value;
+    });
+  }
+
+  const checkInBtn = document.getElementById("check-in-btn");
+  if (checkInBtn)
+    checkInBtn.addEventListener("click", () =>
+      handleAttendanceSubmit("check-in", checkInBtn, refresh)
+    );
+
+  const checkOutBtn = document.getElementById("check-out-btn");
+  if (checkOutBtn)
+    checkOutBtn.addEventListener("click", () =>
+      handleAttendanceSubmit("check-out", checkOutBtn, refresh)
+    );
+}
+
+async function handleAttendanceSubmit(type, button, refresh) {
+  const user = state.user;
+  if (!user) return;
+  const today = getTodayDate();
+  const existing = state.attendance.find(
+    (row) => String(row.user_id) === String(user.id) && String(row.date) === today
+  );
+
+  if (type === "check-in" && existing && existing.check_in) {
+    toast("Anda sudah absen masuk hari ini.", "danger");
+    return;
+  }
+  if (type === "check-out") {
+    if (!existing || !existing.check_in) {
+      toast("Anda belum absen masuk hari ini.", "danger");
+      return;
+    }
+    if (existing.check_out) {
+      toast("Anda sudah absen pulang hari ini.", "danger");
+      return;
+    }
+  }
+
+  const restore = withBusy(
+    button,
+    type === "check-in" ? "Menyimpan absen masuk..." : "Menyimpan absen pulang..."
+  );
+  let uploadedPath = "";
+  try {
+    let photoUrl = "";
+    if (state.selfieBlob) {
+      const uploaded = await uploadPhoto(state.selfieBlob, type === "check-in" ? "masuk" : "pulang");
+      photoUrl = uploaded.url;
+      uploadedPath = uploaded.path;
+    }
+    const result = await rpc(type === "check-in" ? "app_check_in" : "app_check_out", {
+      p_location: state.currentLocation || "Belum ada lokasi",
+      p_note: state.note || "",
+      p_photo_url: photoUrl
+    });
+    toast((result && result.message) || "Absensi berhasil disimpan.", "success");
+    state.note = "";
+    state.selfieData = "";
+    state.selfieBlob = null;
+    stopCamera();
+    await refresh({ silent: true, force: true });
+  } catch (error) {
+    if (uploadedPath) {
+      try {
+        await sb.storage.from(PHOTO_BUCKET).remove([uploadedPath]);
+      } catch (removeError) {}
+    }
+    handleError(error);
+  } finally {
+    restore();
+  }
+}
