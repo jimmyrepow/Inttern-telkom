@@ -32,10 +32,86 @@ const KNOWN_ACTIONS = [
   "export-data"
 ];
 
+const ACTION_LABELS = {
+  "check-in": "Absen masuk",
+  "check-out": "Absen pulang",
+  login: "Masuk ke aplikasi",
+  logout: "Keluar dari aplikasi",
+  "create-user": "Tambah pengguna",
+  "update-user": "Ubah data pengguna",
+  "delete-user": "Hapus pengguna",
+  "delete-user-attendance": "Hapus riwayat absensi pengguna",
+  "reset-password": "Reset kata sandi",
+  "update-settings": "Ubah pengaturan",
+  "edit-attendance": "Edit absensi",
+  "delete-attendance": "Hapus absensi",
+  "submit-leave": "Ajukan izin",
+  "review-leave": "Tinjau pengajuan izin",
+  "submit-correction": "Ajukan koreksi absensi",
+  "approve-correction": "Setujui koreksi absensi",
+  "reject-correction": "Tolak koreksi absensi",
+  "create-announcement": "Buat pengumuman",
+  "update-announcement": "Ubah pengumuman",
+  "delete-announcement": "Hapus pengumuman",
+  "update-intern-profile": "Ubah profil peserta magang",
+  "update-avatar": "Ubah avatar",
+  "update-profile": "Ubah profil",
+  "change-password": "Ubah kata sandi",
+  "submit-suggestion": "Kirim saran",
+  "update-suggestion": "Tanggapi saran",
+  "delete-suggestion": "Hapus saran",
+  "export-data": "Ekspor data"
+};
+
+const SETTING_LABELS = {
+  app_name: "Nama aplikasi",
+  timezone: "Zona waktu",
+  late_limit: "Batas masuk agar tidak terlambat",
+  checkout_limit: "Jam mulai absen pulang",
+  office_name: "Nama kantor",
+  office_lat: "Latitude kantor",
+  office_lng: "Longitude kantor",
+  max_radius_m: "Radius absensi",
+  max_accuracy_m: "Akurasi GPS maksimal"
+};
+
 function actionLabel(value) {
-  return String(value || "-")
+  const action = String(value || "");
+  const label = ACTION_LABELS[action] || action || "-";
+  return label
     .replace(/-/g, " ")
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function formatDetail(row) {
+  const detail = String(row.detail || "").trim();
+  if (!detail) return "-";
+
+  if (row.action === "update-avatar") {
+    return detail === "inisial"
+      ? "Avatar profil dikembalikan ke inisial."
+      : "Avatar profil diperbarui menjadi " + detail + ".";
+  }
+
+  if (row.action !== "update-settings") return detail;
+
+  let settings;
+  try {
+    settings = JSON.parse(detail);
+  } catch (error) {
+    return detail;
+  }
+  if (!settings || typeof settings !== "object" || Array.isArray(settings)) return detail;
+
+  const fields = Object.entries(settings).map(([key, value]) => {
+    const label = SETTING_LABELS[key] || key.replace(/_/g, " ");
+    const formattedValue = value === null || value === "" ? "tidak diisi" : String(value);
+    const unit =
+      key === "max_radius_m" || key === "max_accuracy_m" ? " meter" : "";
+    return label + ": " + formattedValue + unit;
+  });
+  if (!fields.length) return "Pengaturan diperbarui tanpa perubahan nilai.";
+  return "Pengaturan diperbarui: " + fields.join("; ") + ".";
 }
 
 function actionTone(action) {
@@ -78,7 +154,7 @@ function renderRows(rows) {
         <td data-label="Waktu" class="text-nowrap small">${esc(formatDateTime(row.timestamp))}</td>
         <td data-label="Aktor"><span class="fw-semibold">${esc(row.actor || "system")}</span></td>
         <td data-label="Aksi"><span class="log-action ${actionTone(row.action)}">${esc(actionLabel(row.action))}</span></td>
-        <td data-label="Detail"><div class="small text-break-anywhere">${esc(row.detail || "-")}</div></td>
+        <td data-label="Detail"><div class="small text-break-anywhere">${esc(formatDetail(row))}</div></td>
       </tr>
     `
     )
@@ -272,7 +348,7 @@ export function attachLogsEvents(context) {
                 time: formatDateTime(row.timestamp),
                 actor: row.actor || "system",
                 action: actionLabel(row.action),
-                detail: row.detail || ""
+                detail: formatDetail(row)
               }))
             }
           ]
