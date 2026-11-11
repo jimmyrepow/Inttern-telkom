@@ -6,7 +6,7 @@ export function renderGuide(role) {
         <span class="guide-kicker"><i class="bi bi-book"></i> Panduan penggunaan</span>
         <h2>${isAdmin ? "Panduan Admin" : "Panduan Peserta Magang"}</h2>
         <p>${isAdmin
-          ? "Kelola peserta, pantau absensi, atur jam masuk, dan unduh rekap Excel."
+          ? "Kelola peserta, pantau dan koreksi absensi, atur jam masuk/pulang, dan unduh rekap Excel."
           : "Cara absen masuk dan pulang, mengambil GPS, memakai kamera, dan melihat riwayat."}</p>
       </div>
       <div class="guide-hero-art" aria-hidden="true">
@@ -53,11 +53,12 @@ export function renderGuide(role) {
           <h3><span class="guide-icon"><i class="bi bi-sliders"></i></span> Pengaturan absensi</h3>
           <dl class="guide-settings">
             <dt>Batas absen masuk</dt><dd>Jam batas tepat waktu. Absen setelah jam ini ditandai telat. Contoh <code>08:15</code>.</dd>
+            <dt>Jam mulai pulang</dt><dd>Absen pulang baru aktif pada atau setelah jam yang ditetapkan. Default <code>17:00</code>, mengikuti zona waktu aplikasi.</dd>
             <dt>Zona waktu</dt><dd>Gunakan format <code>Asia/Jakarta</code>, <code>Asia/Makassar</code>, atau <code>Asia/Jayapura</code>.</dd>
             <dt>Koordinat kantor</dt><dd>Isi latitude dan longitude berpasangan. Bisa disalin dari Google Maps; periksa kembali sebelum menyimpan.</dd>
             <dt>Radius absensi</dt><dd>Isi nilai sesuai kebijakan kantor. Pada backend saat ini, nilai radius belum memblokir absensi di luar area, jadi jangan mengandalkannya sebagai pembatas lokasi.</dd>
           </dl>
-          <div class="guide-note"><i class="bi bi-lightbulb"></i><span>Perubahan pengaturan tersimpan di server. Perubahan batas jam dan zona waktu digunakan pada pencatatan absensi berikutnya.</span></div>
+          <div class="guide-note"><i class="bi bi-lightbulb"></i><span>Perubahan pengaturan tersimpan di server. Batas absen masuk dan zona waktu digunakan pada pencatatan berikutnya; batas pulang langsung diterapkan dan diperiksa oleh server.</span></div>
         </section>
       </div>
 
@@ -74,7 +75,7 @@ export function renderGuide(role) {
           </div>
           <div>
             <h4>Hapus data</h4>
-            <p>Hapus satu absensi lewat tombol Hapus di tabel. Hapus seluruh absensi peserta lewat menu Peserta. Semua penghapusan memakai modal konfirmasi.</p>
+            <p>Edit satu absensi untuk mengoreksi status tepat waktu/telat serta jam masuk/pulang. Jam pulang tidak boleh lebih awal dari jam masuk. Hapus satu absensi lewat tombol Hapus di tabel; hapus seluruh absensi peserta lewat menu Peserta.</p>
           </div>
           <div>
             <h4>Akun nonaktif</h4>
@@ -90,7 +91,7 @@ export function renderGuide(role) {
           <li><span>1</span><div><strong>Ambil lokasi (disarankan)</strong><p>Tekan <em>Ambil GPS</em> lalu izinkan akses lokasi. Tunggu sampai koordinat dan akurasi muncul. Jika gagal, absensi tetap dapat disimpan dan lokasi ditandai belum tersedia.</p></div></li>
           <li><span>2</span><div><strong>Tambahkan foto (opsional)</strong><p>Foto tidak wajib diisi. Jika kebijakan kantor memerlukannya, gunakan <em>Kamera Perangkat</em> untuk membuka kamera HP atau <em>Kamera Browser</em> untuk pratinjau langsung.</p></div></li>
           <li><span>3</span><div><strong>Isi catatan (opsional)</strong><p>Contoh: WFO, izin, atau keterangan tambahan. Maksimal 500 karakter.</p></div></li>
-          <li><span>4</span><div><strong>Tekan Absen Masuk</strong><p>Setelah berhasil, tombol berubah menjadi <em>Sudah Absen Masuk</em>. Saat pulang, tekan <em>Absen Pulang</em>.</p></div></li>
+          <li><span>4</span><div><strong>Tekan Absen Masuk</strong><p>Setelah berhasil, tombol berubah menjadi <em>Sudah Absen Masuk</em>. Tombol <em>Absen Pulang</em> aktif mulai jam pulang yang ditentukan admin dan server menolak absen lebih awal.</p></div></li>
         </ol>
         <div class="guide-note"><i class="bi bi-camera"></i><span>Jika izin kamera tidak muncul, buka lewat <code>http://localhost</code> atau HTTPS, lalu izinkan kamera lewat ikon gembok di address bar.</span></div>
       </section>

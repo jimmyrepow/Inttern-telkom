@@ -56,6 +56,7 @@ tidak dipakai.
       0003_simple_users.sql
       0004_security_cleanup.sql
       0005_interns.sql      akun peserta magang
+      0006_attendance_edit_and_checkout_limit.sql
 ```
 
 ### Aturan modularisasi
@@ -78,34 +79,22 @@ tidak dipakai.
 
 ## 1. Environment
 
-File **`.env`** (bukan `.env.local`) berisi kredensial project:
+File **`.env`** (bukan `.env.local`) cukup berisi konfigurasi Supabase:
 
 ```
 SUPABASE_URL=https://<project-ref>.supabase.co
 SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 SUPABASE_SECRET_KEY=sb_secret_...
-PORT=5501
 DATABASE_URL=postgresql://postgres:<password-ter-encode>@db.<project-ref>.supabase.co:5432/postgres
-PGHOST=db.<project-ref>.supabase.co
-PGPORT=5432
-PGUSER=postgres
-PGPASSWORD=<password-mentah>
-PGDATABASE=postgres
-SEED_ADMIN_USERNAME=dhea
-SEED_ADMIN_PASSWORD=dhea123
-SEED_ADMIN_NAME=Dhea
-SEED_INTERN_USERNAME=jimmy
-SEED_INTERN_PASSWORD=jimmy123
-SEED_INTERN_NAME=Jimmy
-SEED_RESET_PASSWORDS=false
-CHECK_LOGIN_USERNAME=dhea
-CHECK_LOGIN_PASSWORD=dhea123
 ```
 
 - `SUPABASE_SECRET_KEY` hanya untuk server. Jangan pernah memasukkannya ke
   `assets/js/config.js` atau file yang di-deploy ke browser.
-- `SEED_RESET_PASSWORDS=true` akan mereset password akun seed setiap kali
-  `npm run seed`. Biarkan `false` untuk pemakaian normal.
+- Password pada `DATABASE_URL` harus di-URL-encode. Variabel `PGHOST`,
+  `PGPORT`, `PGUSER`, `PGPASSWORD`, dan `PGDATABASE` hanya diperlukan jika
+  memilih konfigurasi koneksi terpisah sebagai pengganti `DATABASE_URL`.
+- Port server lokal default ke `5500`; variabel `PORT` hanya opsional.
+- Kredensial seed dan login test tidak perlu ditaruh di `.env`.
 
 ## 2. Install dependency
 
@@ -126,6 +115,11 @@ Migrasi berjalan berurutan, dihitung checksum SHA-256, dan dijalankan dalam
 transaksi. File yang sudah sama dilewati (`SKIP`). Untuk perubahan skema baru,
 buat file di `supabase/migrations/` dengan nomor berikutnya; jangan mengedit
 migrasi yang sudah dipakai di production.
+
+Migrasi `0006_attendance_edit_and_checkout_limit.sql` menambahkan batas jam
+pulang dengan nilai awal `17:00`, validasi pulang di database, dan RPC admin
+untuk mengoreksi status serta jam masuk/pulang. Terapkan dengan `npm run migrate`,
+lalu verifikasi dengan `npm run migrate:status`.
 
 `0005_interns.sql` menambahkan akun peserta magang:
 
@@ -201,11 +195,9 @@ token sebagai `p_token`; server memvalidasinya ke tabel `public.sessions`.
 
 ## 7. Tampilan dan notifikasi
 
-- Notifikasi memakai **toast buatan sendiri** (pojok kanan bawah) dan **modal
-  Bootstrap** untuk konfirmasi hapus serta reset password.
-- Tidak ada SweetAlert atau library notifikasi tambahan. Dialog bawaan browser
-  (`alert`, `confirm`, `prompt`) hanya dipakai sebagai cadangan jika Bootstrap
-  gagal dimuat.
+- Notifikasi dan konfirmasi memakai **SweetAlert2** dengan animasi ringan.
+  Jika CDN tidak tersedia, aplikasi tetap memakai notifikasi dan dialog
+  cadangan yang sudah ada.
 - Semua tombol aksi menampilkan status sibuk dan hasil akhir berupa toast, agar
   pengguna tahu proses sedang berjalan atau sudah selesai.
 - Dashboard memakai sidebar dan header yang konsisten; di HP dan tablet sidebar
@@ -221,8 +213,9 @@ token sebagai `p_token`; server memvalidasinya ke tabel `public.sessions`.
 1. Login dengan username dan password yang diberikan admin.
 2. Buka **Absen**, izinkan akses GPS, ambil atau unggah foto, lalu tekan
    **Absen Masuk**.
-3. Setelah jam kerja selesai, tekan **Absen Pulang**. Tombol ini aktif setelah
-   absen masuk berhasil disimpan.
+3. Tekan **Absen Pulang** mulai dari jam pulang yang ditetapkan admin (default
+   **17:00**, mengikuti zona waktu aplikasi). Sebelum waktunya, tombol
+   dinonaktifkan dan server juga menolak permintaan pulang lebih awal.
 4. Buka **Riwayat** untuk memeriksa catatan kehadiran milik sendiri.
 
 ### Panduan singkat admin
@@ -230,8 +223,9 @@ token sebagai `p_token`; server memvalidasinya ke tabel `public.sessions`.
 1. Buka **Peserta** untuk membuat akun, mengubah status, atau reset password.
 2. Buka **Absensi** untuk mencari dan memfilter catatan peserta; gunakan
    **Export** untuk mengunduh laporan.
-3. Buka **Pengaturan** untuk mengatur batas waktu, zona waktu, dan lokasi/radius
-   kantor. Periksa kembali koordinat sebelum menyimpan.
+3. Buka **Pengaturan** untuk mengatur batas telat masuk, jam mulai absen pulang,
+   zona waktu, dan lokasi/radius kantor. Jam pulang default **17:00** dan dapat
+   diubah oleh admin.
 4. Buka **Panduan** kapan saja untuk langkah rinci dan pemecahan masalah.
 
 ## 8. Password dan akun
@@ -251,12 +245,14 @@ token sebagai `p_token`; server memvalidasinya ke tabel `public.sessions`.
 - Dashboard admin:
   - Statistik peserta, hadir, tepat waktu, telat, belum absen.
   - Filter absensi berdasarkan pencarian, tanggal, dan status.
+  - Edit status kehadiran, jam masuk, dan jam pulang; perubahan dicatat di log.
   - Tambah/edit peserta, reset password, aktif/nonaktifkan akun.
   - Hapus satu absensi, hapus seluruh absensi peserta, hapus akun.
-  - Pengaturan nama aplikasi, batas telat, zona waktu, kantor, radius.
+  - Pengaturan nama aplikasi, batas telat, jam mulai pulang, zona waktu, kantor, radius.
   - Export Excel (Users, Attendance, Settings, Logs).
 - Dashboard intern:
   - Absen masuk dan pulang.
+  - Absen pulang dikunci sebelum jam yang ditetapkan dan dicek kembali oleh database.
   - Ambil GPS dan tampilkan akurasi.
   - Kamera browser atau upload foto; foto dikompres ke JPEG.
   - Riwayat absensi pribadi di halaman terpisah.
@@ -267,7 +263,8 @@ token sebagai `p_token`; server memvalidasinya ke tabel `public.sessions`.
 ## 10. Update data dan kode
 
 - **Skema database**: tambah file migrasi baru lalu `npm run migrate`.
-- **Akun seed**: ubah variabel `SEED_*` di `.env`, lalu `npm run seed`.
+- **Akun seed**: jalankan `npm run seed`; tinjau akun default di
+  `scripts/seed.js` sebelum menjalankannya pada database sebenarnya.
 - **Frontend**: edit modul terkait di `assets/js/`.
   - Halaman/login: `views/`
   - Kamera/GPS/Excel: `services/`
@@ -296,15 +293,16 @@ Host database Supabase hanya memiliki record IPv6. Gunakan **Session Pooler**:
 
 1. Buka Supabase Dashboard > **Project Settings > Database**.
 2. Salin connection string **Session Pooler**.
-3. Ganti `PGHOST`, `PGPORT`, `PGUSER`, `PGPASSWORD`, `PGDATABASE` di `.env`.
-   Contoh host: `aws-0-<region>.pooler.supabase.com`, user `postgres.<ref>`.
+3. Ganti `DATABASE_URL` dengan connection string **Session Pooler**. Contoh
+   host: `aws-0-<region>.pooler.supabase.com`, user `postgres.<ref>`.
 
 Script sudah mencoba koneksi ulang otomatis beberapa kali.
 
 ### Port 5501 sudah dipakai
 
-Ubah `PORT` di `.env` ke angka lain (misalnya `5502`), lalu jalankan ulang
-`run.bat` atau `npm run dev`.
+Jalankan server dengan variabel `PORT` diatur ke angka lain (misalnya `5502`),
+lalu jalankan `run.bat` atau `npm run dev`. Jika tidak disetel, port default
+adalah `5500`.
 
 ### Login gagal / `fetch failed`
 

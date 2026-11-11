@@ -12,6 +12,7 @@ const REQUIRED_FUNCTIONS = [
   "app_export_data",
   "admin_create_user",
   "admin_update_user",
+  "admin_update_attendance",
   "admin_reset_password",
   "admin_delete_user",
   "admin_delete_user_attendance",

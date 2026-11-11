@@ -10,6 +10,7 @@ export const state = {
   syncError: "",
   refreshing: null,
   timer: null,
+  checkoutTimer: null,
   selfieData: "",
   selfieBlob: null,
   cameraStream: null,
@@ -35,6 +36,8 @@ export function resetSessionState() {
   state.stats = null;
   state.lastSyncAt = "";
   state.syncError = "";
+  if (state.checkoutTimer) clearInterval(state.checkoutTimer);
+  state.checkoutTimer = null;
   state.selfieData = "";
   state.selfieBlob = null;
   state.note = "";

@@ -16,6 +16,23 @@ import {
 import { renderLocationDisplay, requestLocation } from "../services/location.js";
 import { renderGuide } from "./guide.js";
 
+function checkoutTimeReached(limit, timezone) {
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(limit)) return false;
+  try {
+    const parts = new Intl.DateTimeFormat("en-GB", {
+      timeZone: timezone,
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23"
+    }).formatToParts(new Date());
+    const hour = parts.find((part) => part.type === "hour").value;
+    const minute = parts.find((part) => part.type === "minute").value;
+    return hour + ":" + minute >= limit;
+  } catch (error) {
+    return false;
+  }
+}
+
 export function renderIntern() {
   if (state.ui.tab === "guide") return renderGuide("intern");
 
@@ -39,7 +56,10 @@ function renderAbsenView(history) {
   const hasOut = Boolean(todayRow && todayRow.check_out);
   const settings = state.settings || {};
   const lateLimit = settings.late_limit || "08:15";
+  const checkoutSettingReady = /^([01]\d|2[0-3]):[0-5]\d$/.test(settings.checkout_limit || "");
+  const checkoutLimit = checkoutSettingReady ? settings.checkout_limit : "17:00";
   const timezone = settings.timezone || "Asia/Jakarta";
+  const checkoutReady = checkoutSettingReady && checkoutTimeReached(checkoutLimit, timezone);
   const recent = history.slice(0, 6);
 
   return `
@@ -85,8 +105,9 @@ function renderAbsenView(history) {
             </div>
             <div class="d-flex flex-wrap gap-2 mt-3">
               <button class="btn btn-primary flex-fill rounded-3" id="check-in-btn" type="button" ${hasIn ? "disabled" : ""}>${hasIn ? "Sudah Absen Masuk" : "Absen Masuk"}</button>
-              <button class="btn btn-danger flex-fill rounded-3" id="check-out-btn" type="button" ${!hasIn || hasOut ? "disabled" : ""}>${hasOut ? "Sudah Absen Pulang" : "Absen Pulang"}</button>
+              <button class="btn btn-danger flex-fill rounded-3" id="check-out-btn" type="button" ${!hasIn || hasOut || !checkoutReady ? "disabled" : ""}>${hasOut ? "Sudah Absen Pulang" : !checkoutSettingReady ? "Absen Pulang belum dikonfigurasi" : !checkoutReady ? "Absen Pulang (aktif pukul " + esc(checkoutLimit) + ")" : "Absen Pulang"}</button>
             </div>
+            ${!hasOut ? '<div id="checkout-lock-hint" class="small text-secondary mt-2" aria-live="polite">' + (!checkoutSettingReady ? "Pengaturan jam pulang belum tersedia. Hubungi admin untuk menyiapkan database." : checkoutReady ? "Absen pulang sudah aktif." : "Absen pulang aktif mulai pukul " + esc(checkoutLimit) + " (" + esc(timezone) + ").") + "</div>" : ""}
             ${todayRow ? '<div class="small text-secondary mt-3">Absen hari ini: masuk ' + esc(shortTime(todayRow.check_in)) + " &middot; pulang " + esc(shortTime(todayRow.check_out)) + " &middot; " + statusBadge(todayRow.status) + "</div>" : ""}
           </div>
         </div>
@@ -206,6 +227,48 @@ function renderInternFullHistory(rows) {
 
 export function attachInternEvents(context) {
   const refresh = context.refresh;
+  if (state.checkoutTimer) clearInterval(state.checkoutTimer);
+  state.checkoutTimer = null;
+
+  const checkoutBtn = document.getElementById("check-out-btn");
+  if (checkoutBtn) {
+    const configuredCheckoutLimit = (state.settings && state.settings.checkout_limit) || "";
+    const checkoutSettingReady = /^([01]\d|2[0-3]):[0-5]\d$/.test(configuredCheckoutLimit);
+    const checkoutLimit = checkoutSettingReady ? configuredCheckoutLimit : "";
+    const timezone = (state.settings && state.settings.timezone) || "Asia/Jakarta";
+    const today = getTodayDate();
+    const existing = state.attendance.find(
+      (row) => String(row.user_id) === String(state.user.id) && String(row.date) === today
+    );
+    const hasIn = Boolean(existing && existing.check_in);
+    const hasOut = Boolean(existing && existing.check_out);
+    const updateCheckoutAvailability = () => {
+      if (!checkoutBtn.isConnected) {
+        clearInterval(state.checkoutTimer);
+        state.checkoutTimer = null;
+        return;
+      }
+      const ready = checkoutSettingReady && checkoutTimeReached(checkoutLimit, timezone);
+      checkoutBtn.disabled = !hasIn || hasOut || !ready;
+      if (!hasOut) {
+        checkoutBtn.textContent = !checkoutSettingReady
+          ? "Absen Pulang belum dikonfigurasi"
+          : ready
+            ? "Absen Pulang"
+            : "Absen Pulang (aktif pukul " + checkoutLimit + ")";
+      }
+      const hint = document.getElementById("checkout-lock-hint");
+      if (hint) {
+        hint.textContent = !checkoutSettingReady
+          ? "Pengaturan jam pulang belum tersedia. Hubungi admin untuk menyiapkan database."
+          : ready
+            ? "Absen pulang sudah aktif."
+            : "Absen pulang aktif mulai pukul " + checkoutLimit + " (" + timezone + ").";
+      }
+    };
+    updateCheckoutAvailability();
+    state.checkoutTimer = setInterval(updateCheckoutAvailability, 1000);
+  }
 
   const locationBtn = document.getElementById("location-btn");
   if (locationBtn) locationBtn.addEventListener("click", requestLocation);

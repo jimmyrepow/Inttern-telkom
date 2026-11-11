@@ -1,7 +1,14 @@
 import { state } from "../core/store.js";
 import { rpc, handleError, projectHost } from "../core/api.js";
 import { APP_NAME, PHOTO_BUCKET } from "../core/config.js";
-import { esc, toast, withBusy, confirmDialog, passwordDialog } from "../lib/dom.js";
+import {
+  esc,
+  toast,
+  withBusy,
+  confirmDialog,
+  passwordDialog,
+  attendanceEditDialog
+} from "../lib/dom.js";
 import {
   getTodayDate,
   formatDateTime,
@@ -76,7 +83,12 @@ function renderAttendanceRows(rows) {
         <td data-label="Foto pulang">${renderPhoto(row.photo_out_url)}</td>
         <td class="small" data-label="Lokasi">${renderLocation(row.location)}</td>
         <td class="small" data-label="Catatan">${esc(row.note || "-")}</td>
-        <td data-label="Aksi"><button class="btn btn-outline-danger btn-sm" type="button" data-action="delete-attendance" data-attendance-id="${esc(row.id)}">Hapus</button></td>
+        <td data-label="Aksi">
+          <div class="table-actions">
+            <button class="btn btn-outline-primary btn-sm" type="button" data-action="edit-attendance" data-attendance-id="${esc(row.id)}">Edit</button>
+            <button class="btn btn-outline-danger btn-sm" type="button" data-action="delete-attendance" data-attendance-id="${esc(row.id)}">Hapus</button>
+          </div>
+        </td>
       </tr>
     `
     )
@@ -301,6 +313,11 @@ function renderAdminSettingsTab() {
                   <div class="form-text">Absen setelah jam ini ditandai telat.</div>
                 </div>
                 <div class="col-12 col-sm-6">
+                  <label class="form-label small fw-semibold" for="settings-checkout-limit">Jam mulai absen pulang</label>
+                  <input id="settings-checkout-limit" class="form-control rounded-3" type="time" value="${esc(settings.checkout_limit || "17:00")}" required />
+                  <div class="form-text">Tombol pulang baru aktif pada atau setelah jam ini.</div>
+                </div>
+                <div class="col-12 col-sm-6">
                   <label class="form-label small fw-semibold" for="settings-timezone">Zona waktu</label>
                   <input id="settings-timezone" class="form-control rounded-3" type="text" value="${esc(settings.timezone || "Asia/Jakarta")}" placeholder="Asia/Jakarta" required />
                   <div class="form-text">Contoh: Asia/Jakarta, Asia/Makassar.</div>
@@ -393,6 +410,11 @@ export function attachAdminEvents(context) {
     document.querySelectorAll('[data-action="delete-attendance"]').forEach((button) => {
       button.addEventListener("click", () => handleDeleteAttendance(button.dataset.attendanceId, refresh));
     });
+    document.querySelectorAll('[data-action="edit-attendance"]').forEach((button) => {
+      button.addEventListener("click", () =>
+        handleEditAttendance(button.dataset.attendanceId, button, refresh)
+      );
+    });
   }
 
   if (state.ui.tab === "users") {
@@ -436,6 +458,7 @@ async function handleSettingsSubmit(event, refresh) {
   event.preventDefault();
   const appName = document.getElementById("settings-app-name").value.trim();
   const lateLimit = document.getElementById("settings-late-limit").value.trim();
+  const checkoutLimit = document.getElementById("settings-checkout-limit").value.trim();
   const timezone = document.getElementById("settings-timezone").value.trim();
   const officeName = document.getElementById("settings-office-name").value.trim();
   const officeLat = document.getElementById("settings-office-lat").value.trim();
@@ -448,6 +471,10 @@ async function handleSettingsSubmit(event, refresh) {
   }
   if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(lateLimit)) {
     toast("Batas absen masuk harus berformat HH:MM.", "danger");
+    return;
+  }
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(checkoutLimit)) {
+    toast("Jam mulai absen pulang harus berformat HH:MM.", "danger");
     return;
   }
   if (!/^[A-Za-z_]+(\/[A-Za-z_+-]+)+$/.test(timezone)) {
@@ -493,6 +520,7 @@ async function handleSettingsSubmit(event, refresh) {
       p_settings: {
         app_name: appName,
         late_limit: lateLimit,
+        checkout_limit: checkoutLimit,
         office_name: officeName,
         office_lat: officeLat,
         office_lng: officeLng,
@@ -500,9 +528,17 @@ async function handleSettingsSubmit(event, refresh) {
         timezone
       }
     });
-    state.settings = result.settings || state.settings;
-    toast(result.message || "Pengaturan berhasil disimpan.", "success");
+    const savedSettings = result.settings || {};
+    state.settings = savedSettings;
     await refresh({ silent: true, force: true });
+    if (savedSettings.checkout_limit !== checkoutLimit) {
+      toast(
+        "Pengaturan jam pulang tidak tersimpan. Jalankan npm run migrate untuk memperbarui database.",
+        "danger"
+      );
+      return;
+    }
+    toast(result.message || "Pengaturan berhasil disimpan.", "success");
   } catch (error) {
     handleError(error);
   } finally {
@@ -639,6 +675,33 @@ async function handleDeleteUserAttendance(userId, refresh) {
     await refresh({ silent: true, force: true });
   } catch (error) {
     handleError(error);
+  }
+}
+
+async function handleEditAttendance(attendanceId, button, refresh) {
+  const record = state.attendance.find((item) => String(item.id) === String(attendanceId));
+  if (!record) {
+    toast("Data absensi tidak ditemukan. Muat ulang data lalu coba lagi.", "danger");
+    return;
+  }
+
+  const edited = await attendanceEditDialog(record);
+  if (!edited) return;
+
+  const restore = withBusy(button, "Menyimpan...");
+  try {
+    const result = await rpc("admin_update_attendance", {
+      p_id: attendanceId,
+      p_check_in: edited.checkIn,
+      p_check_out: edited.checkOut,
+      p_status: edited.status
+    });
+    toast(result.message || "Data absensi berhasil diperbarui.", "success");
+    await refresh({ silent: true, force: true });
+  } catch (error) {
+    handleError(error);
+  } finally {
+    restore();
   }
 }
 

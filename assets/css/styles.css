@@ -97,6 +97,31 @@ body {
   color: #111827;
 }
 
+.swal2-popup {
+  border-radius: 1.25rem !important;
+}
+
+.swal2-popup.swal-soft-show {
+  animation: swal-soft-in 180ms ease-out;
+}
+
+@keyframes swal-soft-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .swal2-popup.swal-soft-show {
+    animation: none;
+  }
+}
+
 .table td,
 .table th {
   vertical-align: middle;
