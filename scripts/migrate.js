@@ -109,6 +109,29 @@ async function main() {
     }
   } catch (error) {
     console.error("MIGRASI GAGAL:", error.message);
+    if (
+      (error.code === "ENOTFOUND" || error.code === "ENETUNREACH") &&
+      !process.env.PGHOST &&
+      process.env.DATABASE_URL
+    ) {
+      let hostname = "";
+      try {
+        hostname = new URL(process.env.DATABASE_URL).hostname;
+      } catch (urlError) {
+        hostname = "";
+      }
+      if (/^db\..+\.supabase\.co$/i.test(hostname)) {
+        console.error(
+          "Host database langsung Supabase tidak dapat dijangkau dari jaringan ini (host langsung hanya IPv6)."
+        );
+        console.error(
+          "Di Supabase Dashboard > Project Settings > Database, salin connection string Session Pooler dan ganti DATABASE_URL di .env. Jangan ubah user, password, database, atau host pooler."
+        );
+        console.error(
+          "Setelah itu jalankan npm run migrate, lalu npm run migrate:status."
+        );
+      }
+    }
     process.exitCode = 1;
   } finally {
     if (client) await client.end().catch(() => {});

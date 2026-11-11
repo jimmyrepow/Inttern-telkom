@@ -299,7 +299,11 @@ Host database Supabase hanya memiliki record IPv6. Gunakan **Session Pooler**:
 3. Ganti `DATABASE_URL` dengan connection string **Session Pooler**. Contoh
    host: `aws-0-<region>.pooler.supabase.com`, user `postgres.<ref>`.
 
-Script sudah mencoba koneksi ulang otomatis beberapa kali.
+Migrator akan mencoba ulang untuk kegagalan sementara. Kesalahan DNS atau
+jaringan IPv6 langsung diberi petunjuk tanpa menunggu semua percobaan ulang.
+Session Pooler memakai host yang mendukung jaringan IPv4; gunakan string
+lengkap yang disalin dari dashboard karena nama host dan user berbeda menurut
+region/project.
 
 ### Port 5501 sudah dipakai
 

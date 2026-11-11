@@ -221,3 +221,5 @@ grant execute on function public.app_save_settings(text, jsonb) to anon, authent
 
 revoke execute on function public.admin_update_attendance(text, uuid, text, text, text) from public;
 grant execute on function public.admin_update_attendance(text, uuid, text, text, text) to anon, authenticated;
+
+notify pgrst, 'reload schema';
