@@ -43,6 +43,7 @@ tidak dipakai.
         login.js            halaman login
         admin.js            dashboard admin
         intern.js           dashboard intern dan absensi
+        account.js          profil dan ubah password mandiri
         guide.js            halaman panduan penggunaan
   scripts/
     db.js                   koneksi PostgreSQL + retry
@@ -58,6 +59,8 @@ tidak dipakai.
       0005_interns.sql      akun peserta magang
       0006_attendance_edit_and_checkout_limit.sql
       0007_allow_admin_clear_check_in.sql
+      0008_count_only_actual_check_ins.sql
+      0009_self_service_account.sql
 ```
 
 ### Aturan modularisasi
@@ -124,9 +127,17 @@ lalu verifikasi dengan `npm run migrate:status`.
 Migrasi `0007_allow_admin_clear_check_in.sql` memungkinkan admin mengosongkan
 jam masuk. Jika jam masuk dikosongkan, jam pulang wajib ikut kosong agar catatan
 tidak menyatakan intern pulang tanpa memiliki jam masuk.
-Jika koneksi dari komputer tidak tersedia, buka Supabase Dashboard > SQL Editor
-dan jalankan isi file migrasi `0006_attendance_edit_and_checkout_limit.sql`,
-lalu muat ulang aplikasi agar RPC baru terdeteksi.
+Migrasi `0008_count_only_actual_check_ins.sql` memastikan catatan tanpa jam
+masuk tidak terhitung sebagai hadir pada statistik admin.
+Migrasi `0009_self_service_account.sql` menambahkan RPC `app_update_profile`
+dan `app_change_password` agar setiap pengguna dapat mengubah nama tampilan dan
+mengganti password sendiri. Setelah password berubah, sesi di perangkat lain
+otomatis dikeluarkan.
+Jika koneksi dari komputer tidak tersedia, buka Supabase Dashboard > SQL Editor,
+lalu jalankan isi file migrasi terbaru yang belum diterapkan secara berurutan
+(misalnya `0008_count_only_actual_check_ins.sql` lalu
+`0009_self_service_account.sql`). Setelah itu muat ulang aplikasi agar RPC baru
+terdeteksi.
 
 `0005_interns.sql` menambahkan akun peserta magang:
 
@@ -169,9 +180,9 @@ npm run doctor
 ```
 
 Yang diperiksa: koneksi PostgreSQL, tabel utama, bucket `attendance-photos`,
-RPC penting (`app_login`, `app_bootstrap`, `admin_reset_password`), kolom
-password/login, daftar akun, serta uji login memakai `CHECK_LOGIN_*`.
-Status akhir harus `STATUS : OK`.
+RPC penting (`app_login`, `app_bootstrap`, `admin_reset_password`,
+`app_update_profile`, `app_change_password`), kolom password/login, daftar akun,
+serta uji login memakai `CHECK_LOGIN_*`. Status akhir harus `STATUS : OK`.
 
 ## 6. Menjalankan website
 
@@ -192,10 +203,12 @@ ingin memakai kamera dan GPS; browser hanya mengizinkan keduanya pada
 Alur pemakaian:
 
 1. Login dengan username dan password.
-2. Admin melihat statistik, daftar absensi, daftar peserta, pengaturan, dan
-   export Excel.
-3. Intern melihat status hari ini, form absen masuk/pulang, GPS, selfie, dan
-   riwayat pribadi.
+2. Admin melihat statistik, insight kehadiran, daftar absensi, daftar peserta,
+   pengaturan, dan export Excel.
+3. Intern melihat status hari ini, form absen masuk/pulang, GPS, selfie, insight
+   kehadiran bulanan, dan riwayat pribadi.
+4. Semua pengguna dapat membuka menu **Akun** untuk mengubah nama dan password
+   sendiri.
 
 Token sesi disimpan di `localStorage` dan berlaku 12 jam. Setiap RPC mengirim
 token sebagai `p_token`; server memvalidasinya ke tabel `public.sessions`.
@@ -223,7 +236,11 @@ token sebagai `p_token`; server memvalidasinya ke tabel `public.sessions`.
 3. Tekan **Absen Pulang** mulai dari jam pulang yang ditetapkan admin (default
    **17:00**, mengikuti zona waktu aplikasi). Sebelum waktunya, tombol
    dinonaktifkan dan server juga menolak permintaan pulang lebih awal.
-4. Buka **Riwayat** untuk memeriksa catatan kehadiran milik sendiri.
+4. Buka **Riwayat** untuk memeriksa catatan kehadiran milik sendiri dan melihat
+   insight ketepatan waktu per bulan.
+5. Buka **Akun** untuk mengganti nama atau password. Isi password lama,
+   password baru, dan konfirmasi; indikator kekuatan password membantu memilih
+   password yang aman. Jika lupa password lama, minta admin melakukan reset.
 
 ### Panduan singkat admin
 
@@ -240,10 +257,17 @@ token sebagai `p_token`; server memvalidasinya ke tabel `public.sessions`.
 - `public.users.password` berisi hash bcrypt.
 - `public.users.password_updated_at` menyimpan waktu terakhir password diubah.
 - `public.users.last_login_at` menyimpan waktu login terakhir.
+- Setiap pengguna dapat mengganti password sendiri lewat menu **Akun** dengan
+  memasukkan password lama. RPC: `app_change_password(p_token,
+  p_current_password, p_new_password)`.
+- Setelah password berubah, semua sesi lain milik pengguna tersebut dihapus;
+  sesi yang sedang dipakai tetap aktif.
+- Nama tampilan dapat diubah sendiri lewat menu **Akun**. RPC:
+  `app_update_profile(p_token, p_name)`. Username tetap diubah oleh admin.
 - Admin dapat mengganti password lewat **Peserta > Reset password** (modal
   password dengan konfirmasi) atau form **Edit**.
-- RPC yang dipakai: `admin_reset_password(p_token, p_id, p_password)`.
-- Semua aksi reset password dicatat di `public.logs`.
+- RPC admin: `admin_reset_password(p_token, p_id, p_password)`.
+- Semua aksi perubahan password dan profil dicatat di `public.logs`.
 
 ## 9. Fitur
 
@@ -251,6 +275,8 @@ token sebagai `p_token`; server memvalidasinya ke tabel `public.sessions`.
 - Sesi otomatis diperiksa ulang; sesi kedaluwarsa diarahkan ke login.
 - Dashboard admin:
   - Statistik peserta, hadir, tepat waktu, telat, belum absen.
+  - Insight harian: persentase kehadiran, rasio tepat waktu, dan jumlah peserta
+    yang belum absen dalam satu kartu ringkas.
   - Filter absensi berdasarkan pencarian, tanggal, dan status.
   - Edit status kehadiran, jam masuk, dan jam pulang; admin boleh mengosongkan
     jam masuk. Jika jam masuk dikosongkan, jam pulang ikut dikosongkan untuk
@@ -265,6 +291,12 @@ token sebagai `p_token`; server memvalidasinya ke tabel `public.sessions`.
   - Ambil GPS dan tampilkan akurasi.
   - Kamera browser atau upload foto; foto dikompres ke JPEG.
   - Riwayat absensi pribadi di halaman terpisah.
+  - Insight kehadiran per bulan dan filter bulan pada riwayat.
+- Menu **Akun** untuk semua pengguna:
+  - Ringkasan akun: role, status, login terakhir, dan waktu password diubah.
+  - Ubah nama tampilan.
+  - Ubah password dengan verifikasi password lama, indikator kekuatan, dan
+    daftar syarat interaktif; sesi perangkat lain otomatis dikeluarkan.
 - Panduan penggunaan bawaan untuk intern dan admin.
 - Auto-refresh data setiap 30 detik saat tab aktif.
 - Tampilan responsif mobile, tablet, dan desktop dengan tema pink TELKOM AKSES.

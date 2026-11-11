@@ -17,6 +17,8 @@ const REQUIRED_FUNCTIONS = [
   "admin_delete_user",
   "admin_delete_user_attendance",
   "admin_account_info",
+  "app_update_profile",
+  "app_change_password",
   "require_user",
   "require_admin",
   "log_action"

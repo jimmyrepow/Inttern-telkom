@@ -46,7 +46,7 @@ export function renderGuide(role) {
             <li><span>2</span><div><strong>Tambah atau edit</strong><p>Isi nama, username, password, role, lalu simpan. Username tidak boleh sama.</p></div></li>
             <li><span>3</span><div><strong>Reset password</strong><p>Tekan tombol Reset password. Modal sudah terisi pola <code>username123</code>; ganti bila perlu.</p></div></li>
           </ol>
-          <div class="guide-note"><i class="bi bi-info-circle"></i><span>Pola akun peserta: username = nama depan, password = nama depan + <code>123</code>. Contoh <code>nayla</code> / <code>nayla123</code>.</span></div>
+          <div class="guide-note"><i class="bi bi-info-circle"></i><span>Pola akun peserta: username = nama depan, password = nama depan + <code>123</code>. Contoh <code>nayla</code> / <code>nayla123</code>. Peserta juga dapat mengganti password sendiri lewat menu <strong>Akun</strong>; gunakan Reset password jika peserta lupa password lama.</span></div>
         </section>
 
         <section class="guide-card">
@@ -81,6 +81,10 @@ export function renderGuide(role) {
             <h4>Akun nonaktif</h4>
             <p>Hilangkan centang Aktif saat mengedit peserta. Akun tidak bisa login, tetapi data absensinya tetap tersimpan.</p>
           </div>
+          <div>
+            <h4>Insight harian</h4>
+            <p>Kartu <strong>Insight hari ini</strong> menampilkan persentase kehadiran, perbandingan tepat waktu dan telat, serta jumlah peserta yang belum absen. Gunakan angka ini untuk memantau kehadiran dengan cepat.</p>
+          </div>
         </div>
       </section>
     `
@@ -99,8 +103,8 @@ export function renderGuide(role) {
       <div class="guide-grid">
         <section class="guide-card">
           <h3><span class="guide-icon"><i class="bi bi-clock-history"></i></span> Riwayat absensi</h3>
-          <p>Menu Riwayat menampilkan absensi pribadi: tanggal, jam masuk, jam pulang, status tepat waktu/telat, dan foto.</p>
-          <p class="mb-0">Data terbaru muncul paling atas. Tekan thumbnail foto untuk membukanya di tab baru.</p>
+          <p>Menu Riwayat menampilkan absensi pribadi: tanggal, jam masuk, jam pulang, status tepat waktu/telat, dan foto. Kartu insight merangkum ketepatan waktu bulan ini.</p>
+          <p class="mb-0">Gunakan filter bulan untuk melihat periode tertentu, atau tombol <em>Semua</em> untuk menampilkan data terbaru. Tekan thumbnail foto untuk membukanya di tab baru.</p>
         </section>
 
         <section class="guide-card">
@@ -108,11 +112,22 @@ export function renderGuide(role) {
           <ul class="guide-list guide-list-compact">
             <li><i class="bi bi-check2-circle"></i><span>Jangan bagikan password ke orang lain.</span></li>
             <li><i class="bi bi-check2-circle"></i><span>Selalu keluar setelah memakai perangkat bersama.</span></li>
-            <li><i class="bi bi-check2-circle"></i><span>Lupa password? Minta admin melakukan reset.</span></li>
+            <li><i class="bi bi-check2-circle"></i><span>Lupa password? Buka menu <strong>Akun</strong> untuk mengganti sendiri. Jika lupa password lama, minta admin melakukan reset.</span></li>
             <li><i class="bi bi-check2-circle"></i><span>Sesi berlaku 12 jam; setelah itu login ulang.</span></li>
           </ul>
         </section>
       </div>
+
+      <section class="guide-card">
+        <h3><span class="guide-icon"><i class="bi bi-person-gear"></i></span> Mengubah nama dan password</h3>
+        <ol class="guide-steps">
+          <li><span>1</span><div><strong>Buka menu Akun</strong><p>Klik menu <em>Akun</em> di sidebar atau ikon profil di kanan atas, lalu pilih <em>Akun saya</em>.</p></div></li>
+          <li><span>2</span><div><strong>Ubah nama</strong><p>Perbarui nama lengkap lalu tekan <em>Simpan nama</em>. Nama baru dipakai untuk absensi berikutnya.</p></div></li>
+          <li><span>3</span><div><strong>Ganti password</strong><p>Isi password lama, password baru, lalu ulangi password baru. Indikator kekuatan dan daftar syarat membantu memastikan password sudah benar.</p></div></li>
+          <li><span>4</span><div><strong>Simpan</strong><p>Setelah berhasil, sesi di perangkat lain otomatis keluar. Perangkat yang sedang dipakai tetap masuk.</p></div></li>
+        </ol>
+        <div class="guide-note"><i class="bi bi-info-circle"></i><span>Lupa password lama? Hubungi admin untuk reset password. Setelah direset, Anda bisa menggantinya sendiri lewat menu Akun.</span></div>
+      </section>
     `
     }
 
@@ -148,7 +163,7 @@ export function renderGuide(role) {
             <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq-password" aria-expanded="false" aria-controls="faq-password">Lupa password</button>
           </h4>
           <div id="faq-password" class="accordion-collapse collapse" data-bs-parent="#guide-faq">
-            <div class="accordion-body">Password tidak bisa dilihat kembali karena disimpan sebagai hash. Minta admin membuka menu <strong>Peserta</strong> lalu menekan <strong>Reset password</strong>.</div>
+            <div class="accordion-body">Buka menu <strong>Akun</strong> lalu isi password lama, password baru, dan konfirmasi. Password tidak bisa dilihat kembali karena disimpan sebagai hash. Jika lupa password lama, minta admin membuka menu <strong>Peserta</strong> lalu menekan <strong>Reset password</strong>.</div>
           </div>
         </div>
         <div class="accordion-item">

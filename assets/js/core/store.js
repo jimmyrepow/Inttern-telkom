@@ -23,6 +23,7 @@ export const state = {
     date: "",
     status: "",
     userFormId: "",
+    historyMonth: "",
     sidebarOpen: false
   }
 };
@@ -48,5 +49,6 @@ export function resetSessionState() {
   state.ui.date = "";
   state.ui.status = "";
   state.ui.userFormId = "";
+  state.ui.historyMonth = "";
   state.ui.sidebarOpen = false;
 }

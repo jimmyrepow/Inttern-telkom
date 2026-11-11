@@ -2,7 +2,7 @@ import { state } from "../core/store.js";
 import { rpc, handleError, sb } from "../core/api.js";
 import { PHOTO_BUCKET } from "../core/config.js";
 import { esc, toast, withBusy } from "../lib/dom.js";
-import { getTodayDate, shortTime, statusBadge } from "../lib/format.js";
+import { getTodayDate, shortTime, statusBadge, formatMonth } from "../lib/format.js";
 import { statCard, renderPhoto } from "../lib/render.js";
 import {
   renderSelfiePreview,
@@ -108,7 +108,7 @@ function renderAbsenView(history) {
               <button class="btn btn-danger flex-fill rounded-3" id="check-out-btn" type="button" ${!hasIn || hasOut || !checkoutReady ? "disabled" : ""}>${hasOut ? "Sudah Absen Pulang" : !checkoutSettingReady ? "Absen Pulang belum dikonfigurasi" : !checkoutReady ? "Absen Pulang (aktif pukul " + esc(checkoutLimit) + ")" : "Absen Pulang"}</button>
             </div>
             ${!hasOut ? '<div id="checkout-lock-hint" class="small text-secondary mt-2" aria-live="polite">' + (!checkoutSettingReady ? "Pengaturan jam pulang belum tersedia. Hubungi admin untuk menyiapkan database." : checkoutReady ? "Absen pulang sudah aktif." : "Absen pulang aktif mulai pukul " + esc(checkoutLimit) + " (" + esc(timezone) + ").") + "</div>" : ""}
-            ${todayRow ? '<div class="small text-secondary mt-3">Absen hari ini: masuk ' + esc(shortTime(todayRow.check_in)) + " &middot; pulang " + esc(shortTime(todayRow.check_out)) + " &middot; " + statusBadge(todayRow.status) + "</div>" : ""}
+            ${todayRow ? '<div class="small text-secondary mt-3">Absen hari ini: masuk ' + esc(shortTime(todayRow.check_in)) + " &middot; pulang " + esc(shortTime(todayRow.check_out)) + " &middot; " + statusBadge(todayRow.status, hasIn) + "</div>" : ""}
           </div>
         </div>
       </div>
@@ -144,10 +144,23 @@ function renderAbsenView(history) {
 }
 
 function renderHistoryView(history) {
-  const total = history.length;
-  const late = history.filter((row) => row.status === "late").length;
-  const onTime = history.filter((row) => row.status !== "late").length;
-  const last = history[0];
+  const attended = history.filter((row) => Boolean(row.check_in));
+  const total = attended.length;
+  const late = attended.filter((row) => row.status === "late").length;
+  const onTime = attended.filter((row) => row.status !== "late").length;
+  const last = attended[0];
+
+  const currentMonth = getTodayDate().slice(0, 7);
+  const selectedMonth = state.ui.historyMonth || "";
+  const insightMonth = selectedMonth || currentMonth;
+  const insightRows = attended.filter((row) => String(row.date).slice(0, 7) === insightMonth);
+  const insightTotal = insightRows.length;
+  const insightLate = insightRows.filter((row) => row.status === "late").length;
+  const insightOnTime = insightTotal - insightLate;
+  const punctuality = insightTotal ? Math.round((insightOnTime / insightTotal) * 100) : 0;
+  const tableRows = selectedMonth
+    ? history.filter((row) => String(row.date).slice(0, 7) === selectedMonth)
+    : history.slice(0, 60);
 
   return `
     <div class="stats-grid mb-4">
@@ -156,12 +169,48 @@ function renderHistoryView(history) {
       ${statCard("Telat", late)}
       ${statCard("Absensi terakhir", last ? last.date : "-", last ? shortTime(last.check_in) : "Belum ada")}
     </div>
+
+    <div class="card rounded-4 border-0 shadow-sm mb-4">
+      <div class="card-body p-3 p-md-4">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+          <div>
+            <h2 class="h5 fw-bold mb-1">Insight kehadiran</h2>
+            <div class="small text-secondary">Ringkasan ${esc(formatMonth(insightMonth))}${selectedMonth ? "" : " (bulan ini)"}.</div>
+          </div>
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <input id="history-month" class="form-control form-control-sm rounded-3" type="month" value="${esc(selectedMonth)}" max="${esc(currentMonth)}" aria-label="Filter bulan riwayat" style="max-width: 170px" />
+            <button class="btn btn-sm btn-outline-primary rounded-pill" id="history-month-current" type="button">Bulan ini</button>
+            <button class="btn btn-sm btn-outline-secondary rounded-pill" id="history-month-reset" type="button" ${selectedMonth ? "" : "disabled"}>Semua</button>
+          </div>
+        </div>
+        <div class="row g-3 align-items-center">
+          <div class="col-12 col-lg-5">
+            <div class="d-flex justify-content-between align-items-center small mb-1">
+              <span class="text-secondary">Tingkat tepat waktu</span>
+              <strong>${punctuality}%</strong>
+            </div>
+            <div class="progress insight-progress" role="progressbar" aria-valuenow="${punctuality}" aria-valuemin="0" aria-valuemax="100" aria-label="Tingkat tepat waktu">
+              <div class="progress-bar ${punctuality >= 80 ? "bg-success" : punctuality >= 50 ? "bg-warning" : "bg-danger"}" style="width:${punctuality}%"></div>
+            </div>
+            <div class="small text-secondary mt-1">${insightTotal ? insightOnTime + " dari " + insightTotal + " hari hadir tepat waktu" : "Belum ada data pada bulan ini"}</div>
+          </div>
+          <div class="col-12 col-lg-7">
+            <div class="insight-chips">
+              <span class="insight-chip"><i class="bi bi-calendar-check"></i><strong>${insightTotal}</strong> hari hadir</span>
+              <span class="insight-chip is-success"><i class="bi bi-check2-circle"></i><strong>${insightOnTime}</strong> tepat waktu</span>
+              <span class="insight-chip is-warning"><i class="bi bi-clock-history"></i><strong>${insightLate}</strong> telat</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="card rounded-4 border-0 shadow-sm">
       <div class="card-body p-3 p-md-4">
         <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
           <div>
             <h2 class="h5 fw-bold mb-1">Riwayat absensi</h2>
-            <div class="small text-secondary">${total} data, terbaru di atas</div>
+            <div class="small text-secondary">${tableRows.length} data${selectedMonth ? " pada " + esc(formatMonth(selectedMonth)) : ", terbaru di atas"}</div>
           </div>
           <button class="btn btn-primary btn-sm rounded-pill" type="button" data-nav="absen">Absen sekarang</button>
         </div>
@@ -177,7 +226,7 @@ function renderHistoryView(history) {
                 <th>Foto pulang</th>
               </tr>
             </thead>
-            <tbody>${renderInternFullHistory(history.slice(0, 30))}</tbody>
+            <tbody>${renderInternFullHistory(tableRows)}</tbody>
           </table>
         </div>
       </div>
@@ -197,7 +246,7 @@ function renderInternHistory(rows) {
           <td class="text-nowrap" data-label="Tanggal">${esc(row.date)}</td>
           <td data-label="Masuk">${esc(shortTime(row.check_in))}</td>
           <td data-label="Pulang">${esc(shortTime(row.check_out))}</td>
-          <td data-label="Status">${statusBadge(row.status)}</td>
+          <td data-label="Status">${statusBadge(row.status, Boolean(row.check_in))}</td>
           <td class="text-nowrap" data-label="Foto">${photos}</td>
         </tr>
       `;
@@ -216,7 +265,7 @@ function renderInternFullHistory(rows) {
         <td class="text-nowrap" data-label="Tanggal">${esc(row.date)}</td>
         <td data-label="Masuk">${esc(shortTime(row.check_in))}</td>
         <td data-label="Pulang">${esc(shortTime(row.check_out))}</td>
-        <td data-label="Status">${statusBadge(row.status)}</td>
+        <td data-label="Status">${statusBadge(row.status, Boolean(row.check_in))}</td>
         <td data-label="Foto masuk">${renderPhoto(row.photo_url)}</td>
         <td data-label="Foto pulang">${renderPhoto(row.photo_out_url)}</td>
       </tr>
@@ -227,8 +276,31 @@ function renderInternFullHistory(rows) {
 
 export function attachInternEvents(context) {
   const refresh = context.refresh;
+  const rerender = context.rerender;
   if (state.checkoutTimer) clearInterval(state.checkoutTimer);
   state.checkoutTimer = null;
+
+  const monthInput = document.getElementById("history-month");
+  if (monthInput) {
+    monthInput.addEventListener("change", () => {
+      state.ui.historyMonth = monthInput.value;
+      if (typeof rerender === "function") rerender();
+    });
+  }
+  const monthCurrent = document.getElementById("history-month-current");
+  if (monthCurrent) {
+    monthCurrent.addEventListener("click", () => {
+      state.ui.historyMonth = getTodayDate().slice(0, 7);
+      if (typeof rerender === "function") rerender();
+    });
+  }
+  const monthReset = document.getElementById("history-month-reset");
+  if (monthReset) {
+    monthReset.addEventListener("click", () => {
+      state.ui.historyMonth = "";
+      if (typeof rerender === "function") rerender();
+    });
+  }
 
   const checkoutBtn = document.getElementById("check-out-btn");
   if (checkoutBtn) {

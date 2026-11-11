@@ -42,7 +42,50 @@ export function renderAdmin() {
       ${statCard("Telat", stats.late)}
       ${statCard("Belum absen", stats.absent)}
     </div>
+    ${renderAdminInsight(stats)}
     ${renderAdminAttendanceTab()}
+  `;
+}
+
+function renderAdminInsight(stats) {
+  const total = Number(stats.totalInterns) || 0;
+  const present = Number(stats.totalAttendanceToday) || 0;
+  const onTime = Number(stats.onTime) || 0;
+  const late = Number(stats.late) || 0;
+  const absent = Number(stats.absent) || 0;
+  const rate = total ? Math.round((present / total) * 100) : 0;
+  const onTimeRate = present ? Math.round((onTime / present) * 100) : 0;
+  return `
+    <div class="card rounded-4 border-0 shadow-sm mb-4">
+      <div class="card-body p-3 p-md-4">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+          <div>
+            <h2 class="h5 fw-bold mb-1">Insight hari ini</h2>
+            <div class="small text-secondary">Ringkasan kehadiran peserta pada ${esc(stats.today || getTodayDate())}.</div>
+          </div>
+          <span class="badge ${rate >= 80 ? "bg-success" : rate >= 50 ? "bg-warning text-dark" : "bg-danger"} rounded-pill px-3 py-2">${rate}% hadir</span>
+        </div>
+        <div class="row g-3 align-items-center">
+          <div class="col-12 col-lg-5">
+            <div class="d-flex justify-content-between align-items-center small mb-1">
+              <span class="text-secondary">Tingkat kehadiran</span>
+              <strong>${present} / ${total} peserta</strong>
+            </div>
+            <div class="progress insight-progress" role="progressbar" aria-valuenow="${rate}" aria-valuemin="0" aria-valuemax="100" aria-label="Tingkat kehadiran hari ini">
+              <div class="progress-bar ${rate >= 80 ? "bg-success" : rate >= 50 ? "bg-warning" : "bg-danger"}" style="width:${rate}%"></div>
+            </div>
+            <div class="small text-secondary mt-1">${absent} peserta belum absen hari ini.</div>
+          </div>
+          <div class="col-12 col-lg-7">
+            <div class="insight-chips">
+              <span class="insight-chip is-success"><i class="bi bi-check2-circle"></i><strong>${onTime}</strong> tepat waktu (${onTimeRate}%)</span>
+              <span class="insight-chip is-warning"><i class="bi bi-clock-history"></i><strong>${late}</strong> telat</span>
+              <span class="insight-chip"><i class="bi bi-person-dash"></i><strong>${absent}</strong> belum absen</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   `;
 }
 
@@ -78,7 +121,7 @@ function renderAttendanceRows(rows) {
         </td>
         <td data-label="Masuk">${esc(shortTime(row.check_in))}</td>
         <td data-label="Pulang">${esc(shortTime(row.check_out))}</td>
-        <td data-label="Status">${statusBadge(row.status)}</td>
+        <td data-label="Status">${statusBadge(row.status, Boolean(row.check_in))}</td>
         <td data-label="Foto masuk">${renderPhoto(row.photo_url)}</td>
         <td data-label="Foto pulang">${renderPhoto(row.photo_out_url)}</td>
         <td class="small" data-label="Lokasi">${renderLocation(row.location)}</td>

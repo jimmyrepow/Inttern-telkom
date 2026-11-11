@@ -12,6 +12,7 @@ import { esc } from "./lib/dom.js";
 import { renderLogin } from "./views/login.js";
 import { renderAdmin, attachAdminEvents } from "./views/admin.js";
 import { renderIntern, attachInternEvents } from "./views/intern.js";
+import { renderAccount, attachAccountEvents } from "./views/account.js";
 import { exportData } from "./services/export.js";
 import { stopCamera } from "./services/photo.js";
 
@@ -23,11 +24,13 @@ const NAV = {
     { id: "attendance", label: "Absensi", icon: "bi-calendar2-check" },
     { id: "users", label: "Peserta", icon: "bi-people" },
     { id: "settings", label: "Pengaturan", icon: "bi-sliders" },
+    { id: "account", label: "Akun", icon: "bi-person-gear" },
     { id: "guide", label: "Panduan", icon: "bi-book" }
   ],
   intern: [
     { id: "absen", label: "Absen Hari Ini", icon: "bi-fingerprint" },
     { id: "riwayat", label: "Riwayat", icon: "bi-clock-history" },
+    { id: "account", label: "Akun", icon: "bi-person-gear" },
     { id: "guide", label: "Panduan", icon: "bi-book" }
   ]
 };
@@ -37,11 +40,13 @@ const PAGE_META = {
     attendance: { title: "Absensi", subtitle: "Pantau kehadiran peserta hari ini" },
     users: { title: "Peserta", subtitle: "Kelola akun, role, dan password" },
     settings: { title: "Pengaturan", subtitle: "Atur jam masuk, zona waktu, dan lokasi kantor" },
+    account: { title: "Akun Saya", subtitle: "Ubah nama dan password akun Anda" },
     guide: { title: "Panduan", subtitle: "Cara memakai website untuk admin" }
   },
   intern: {
     absen: { title: "Absen Hari Ini", subtitle: "Catat kehadiran dengan GPS dan selfie" },
     riwayat: { title: "Riwayat", subtitle: "Semua absensi pribadi Anda" },
+    account: { title: "Akun Saya", subtitle: "Ubah nama dan password akun Anda" },
     guide: { title: "Panduan", subtitle: "Cara memakai website untuk peserta" }
   }
 };
@@ -209,7 +214,8 @@ async function refreshData(options) {
 function canAutoRefresh() {
   if (!state.user || state.page !== "dashboard" || document.hidden) return false;
   if (state.cameraStream) return false;
-  if (state.ui.tab === "settings" || state.ui.tab === "guide") return false;
+  if (state.ui.tab === "settings" || state.ui.tab === "guide" || state.ui.tab === "account")
+    return false;
   const active = document.activeElement;
   if (active && /^(INPUT|TEXTAREA|SELECT)$/.test(active.tagName)) return false;
   return true;
@@ -333,6 +339,7 @@ function renderHeader(role, isAdmin) {
                 <small>${esc(state.user.username)} &middot; ${esc(state.user.role)}</small>
               </div>
             </li>
+            <li><button class="dropdown-item" type="button" data-nav="account"><i class="bi bi-person-gear me-2"></i>Akun saya</button></li>
             <li><button class="dropdown-item" type="button" data-nav="guide"><i class="bi bi-book me-2"></i>Panduan penggunaan</button></li>
             <li><button class="dropdown-item" id="menu-refresh" type="button"><i class="bi bi-arrow-clockwise me-2"></i>Muat ulang data</button></li>
             ${isAdmin ? '<li><button class="dropdown-item" id="menu-export" type="button"><i class="bi bi-download me-2"></i>Export Excel</button></li>' : ""}
@@ -386,13 +393,16 @@ function renderDashboard() {
   const nav = NAV[role];
   if (!nav.some((item) => item.id === state.ui.tab)) state.ui.tab = nav[0].id;
 
+  const isAccount = state.ui.tab === "account";
+  const content = isAccount ? renderAccount() : isAdmin ? renderAdmin() : renderIntern();
+
   app.innerHTML = `
     <div class="app-shell ${state.ui.sidebarOpen ? "sidebar-open" : ""}" id="app-shell">
       ${renderSidebar(role)}
       <div class="app-main">
         ${renderHeader(role, isAdmin)}
         <main class="app-content" id="app-content">
-          ${isAdmin ? renderAdmin() : renderIntern()}
+          ${content}
         </main>
         <footer class="app-footer">
           <span>${esc(APP_NAME)}</span>
@@ -405,8 +415,9 @@ function renderDashboard() {
   document.body.classList.toggle("sidebar-locked", Boolean(state.ui.sidebarOpen));
   attachHeaderEvents();
   attachShellEvents();
-  if (isAdmin) attachAdminEvents({ rerender: renderDashboard, refresh: refreshData });
-  else attachInternEvents({ refresh: refreshData });
+  if (isAccount) attachAccountEvents({ rerender: renderDashboard, refresh: refreshData, logout });
+  else if (isAdmin) attachAdminEvents({ rerender: renderDashboard, refresh: refreshData });
+  else attachInternEvents({ rerender: renderDashboard, refresh: refreshData });
 }
 
 function attachHeaderEvents() {

@@ -1579,3 +1579,261 @@ body.sidebar-locked {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* =========================================================
+   Halaman akun & insight
+   ========================================================= */
+
+.account-hero {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 1.1rem;
+  margin-bottom: 1rem;
+  border: 1px solid #fbcfe8;
+  border-radius: 1.25rem;
+  background: linear-gradient(135deg, #fff1f5 0%, #f5f3ff 100%);
+}
+
+.account-hero-avatar {
+  width: 72px;
+  height: 72px;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1.2rem;
+  background: linear-gradient(135deg, var(--pink-500), #f472b6);
+  color: #fff;
+  font-size: 1.2rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  box-shadow: 0 12px 26px rgba(236, 72, 153, 0.24);
+}
+
+.account-hero-body {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.account-hero-body h2 {
+  margin: 0.35rem 0 0.2rem;
+  font-size: 1.2rem;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.account-hero-body p {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.9rem;
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--gray-500);
+}
+
+.account-hero-body p span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.account-hero-actions {
+  margin-left: auto;
+}
+
+.card-section-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  margin-bottom: 1rem;
+}
+
+.card-section-icon {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.8rem;
+  background: var(--pink-100);
+  color: var(--pink-700);
+  font-size: 1.1rem;
+}
+
+.account-meta {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.account-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px dashed var(--gray-200);
+  font-size: 0.82rem;
+}
+
+.account-meta-row:last-child {
+  border-bottom: 0;
+}
+
+.account-meta-row span {
+  color: var(--gray-500);
+}
+
+.account-meta-row strong {
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.password-strength {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.password-strength span {
+  height: 6px;
+  flex: 1 1 0;
+  border-radius: 999px;
+  background: var(--gray-200);
+  transition: background 0.18s ease;
+}
+
+.password-strength span.is-on {
+  background: var(--warning);
+}
+
+.password-strength[data-level="1"] span.is-on,
+.password-strength[data-level="2"] span.is-on {
+  background: var(--danger);
+}
+
+.password-strength[data-level="3"] span.is-on {
+  background: var(--warning);
+}
+
+.password-strength[data-level="4"] span.is-on,
+.password-strength[data-level="5"] span.is-on {
+  background: var(--success);
+}
+
+.password-requirements {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.password-requirements li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+  color: var(--gray-500);
+}
+
+.password-requirements li i {
+  font-size: 0.9rem;
+  color: var(--gray-500);
+}
+
+.password-requirements li.is-ok {
+  color: var(--success);
+}
+
+.password-requirements li.is-ok i {
+  color: var(--success);
+}
+
+.password-requirements li.is-bad {
+  color: var(--danger);
+}
+
+.password-requirements li.is-bad i {
+  color: var(--danger);
+}
+
+.account-tips {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.account-tips li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  font-size: 0.82rem;
+  color: var(--gray-700);
+}
+
+.account-tips li i {
+  color: var(--success);
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
+.insight-progress {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--gray-100);
+}
+
+.insight-progress .progress-bar {
+  border-radius: 999px;
+}
+
+.insight-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.insight-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.85rem;
+  background: var(--gray-100);
+  color: var(--gray-700);
+  font-size: 0.78rem;
+}
+
+.insight-chip i {
+  font-size: 0.9rem;
+}
+
+.insight-chip.is-success {
+  background: #ecfdf5;
+  color: #15803d;
+}
+
+.insight-chip.is-warning {
+  background: #fffbeb;
+  color: #b45309;
+}
+
+@media (min-width: 768px) {
+  .account-hero {
+    padding: 1.35rem 1.5rem;
+  }
+
+  .account-hero-avatar {
+    width: 84px;
+    height: 84px;
+    font-size: 1.4rem;
+  }
+
+  .account-hero-body h2 {
+    font-size: 1.4rem;
+  }
+}

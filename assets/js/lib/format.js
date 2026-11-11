@@ -32,6 +32,37 @@ export function shortTime(value) {
   return String(value).slice(0, 5);
 }
 
+export function formatMonth(value) {
+  const match = String(value || "").match(/^(\d{4})-(\d{2})/);
+  if (!match) return "-";
+  const months = [
+    "Januari",
+    "Februari",
+    "Maret",
+    "April",
+    "Mei",
+    "Juni",
+    "Juli",
+    "Agustus",
+    "September",
+    "Oktober",
+    "November",
+    "Desember"
+  ];
+  const label = months[Number(match[2]) - 1] || match[2];
+  return label + " " + match[1];
+}
+
+export function initials(name) {
+  return String(name || "?")
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part.charAt(0))
+    .join("")
+    .toUpperCase();
+}
+
 export function isActiveUser(user) {
   if (!user) return false;
   const value = user.active;
@@ -41,7 +72,10 @@ export function isActiveUser(user) {
   return text !== "false" && text !== "0" && text !== "tidak";
 }
 
-export function statusBadge(status) {
+export function statusBadge(status, hasCheckIn) {
+  if (hasCheckIn === false) {
+    return '<span class="badge bg-secondary rounded-pill">Belum absen</span>';
+  }
   const late = String(status) === "late";
   return (
     '<span class="badge ' +
