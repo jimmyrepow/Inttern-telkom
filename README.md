@@ -43,6 +43,7 @@ tidak dipakai.
         format.js           tanggal, jam, status, akun aktif
         render.js           potongan tampilan bersama
         avatar.js           emoji/warna avatar dan render inisial
+        action-menu.js      menu titik-tiga untuk aksi tabel
         pagination.js       helper pembagian halaman tabel
         achievements.js     ringkasan dan lencana kehadiran
       services/

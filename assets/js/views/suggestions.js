@@ -186,8 +186,8 @@ function renderAdminRows(rows) {
           <td data-label="Balasan">${reply}</td>
           <td data-label="Aksi">
             <div class="table-actions">
-              <button class="btn btn-sm btn-outline-primary rounded-pill" type="button" data-action="reply-suggestion" data-id="${esc(item.id)}">Balas</button>
-              <button class="btn btn-sm btn-outline-danger rounded-pill" type="button" data-action="delete-suggestion" data-id="${esc(item.id)}">Hapus</button>
+              <button class="btn btn-sm btn-icon is-primary" type="button" data-action="reply-suggestion" data-id="${esc(item.id)}" title="Balas saran" aria-label="Balas saran dari ${esc(item.name || "-")}"><i class="bi bi-chat-left-text" aria-hidden="true"></i></button>
+              <button class="btn btn-sm btn-icon is-danger" type="button" data-action="delete-suggestion" data-id="${esc(item.id)}" title="Hapus saran" aria-label="Hapus saran dari ${esc(item.name || "-")}"><i class="bi bi-trash3" aria-hidden="true"></i></button>
             </div>
           </td>
         </tr>

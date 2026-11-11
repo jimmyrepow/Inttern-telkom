@@ -125,8 +125,8 @@ function renderAttendanceRows(rows) {
         <td class="small" data-label="Catatan">${esc(row.note || "-")}</td>
         <td data-label="Aksi">
           <div class="table-actions">
-            <button class="btn btn-outline-primary btn-sm" type="button" data-action="edit-attendance" data-attendance-id="${esc(row.id)}">Edit</button>
-            <button class="btn btn-outline-danger btn-sm" type="button" data-action="delete-attendance" data-attendance-id="${esc(row.id)}">Hapus</button>
+            <button class="btn btn-sm btn-icon is-primary" type="button" data-action="edit-attendance" data-attendance-id="${esc(row.id)}" title="Edit absensi" aria-label="Edit absensi ${esc(row.name)} tanggal ${esc(row.date)}"><i class="bi bi-pencil-square" aria-hidden="true"></i></button>
+            <button class="btn btn-sm btn-icon is-danger" type="button" data-action="delete-attendance" data-attendance-id="${esc(row.id)}" title="Hapus absensi" aria-label="Hapus absensi ${esc(row.name)} tanggal ${esc(row.date)}"><i class="bi bi-trash3" aria-hidden="true"></i></button>
           </div>
         </td>
       </tr>

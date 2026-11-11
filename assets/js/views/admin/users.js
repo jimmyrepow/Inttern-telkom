@@ -10,6 +10,7 @@ import {
 } from "../../lib/dom.js";
 import { formatDateTime, isActiveUser } from "../../lib/format.js";
 import { renderAvatar } from "../../lib/avatar.js";
+import { openActionMenu } from "../../lib/action-menu.js";
 import { paginate, renderPagination } from "../../lib/pagination.js";
 import { removePhotos } from "../../services/photo.js";
 
@@ -42,7 +43,6 @@ function renderUserRows(rows) {
   return rows
     .map((user) => {
       const role = String(user.role || "intern").toLowerCase();
-      const canDeleteAccount = String(user.id) !== String((state.user || {}).id || "");
       const accountLines = [
         '<div class="small text-secondary">Login: ' + esc(formatDateTime(user.last_login_at)) + "</div>",
         '<div class="small text-secondary">Password: ' + esc(formatDateTime(user.password_updated_at)) + "</div>"
@@ -64,10 +64,9 @@ function renderUserRows(rows) {
           <td class="small" data-label="Akun">${accountLines.join("")}</td>
           <td data-label="Aksi">
             <div class="table-actions">
-              <button class="btn btn-sm btn-outline-primary rounded-pill" type="button" data-action="edit-user" data-user-id="${esc(user.id)}">Edit</button>
-              <button class="btn btn-sm btn-outline-secondary rounded-pill" type="button" data-action="reset-password" data-user-id="${esc(user.id)}">Reset password</button>
-              <button class="btn btn-sm btn-outline-warning rounded-pill" type="button" data-action="delete-user-attendance" data-user-id="${esc(user.id)}">Hapus absensi</button>
-              ${canDeleteAccount ? '<button class="btn btn-sm btn-outline-danger rounded-pill" type="button" data-action="delete-user" data-user-id="' + esc(user.id) + '">Hapus akun</button>' : ""}
+              <button class="btn btn-sm btn-icon action-trigger" type="button" data-action="user-menu" data-user-id="${esc(user.id)}" aria-label="Aksi untuk ${esc(user.name)}" aria-haspopup="menu" aria-expanded="false" title="Aksi">
+                <i class="bi bi-three-dots-vertical" aria-hidden="true"></i>
+              </button>
             </div>
           </td>
         </tr>
@@ -197,6 +196,10 @@ export function attachAdminUsers(context) {
       const button = event.target.closest("[data-action]");
       if (!button) return;
       const userId = button.dataset.userId;
+      if (button.dataset.action === "user-menu") {
+        openUserMenu(button, userId, context);
+        return;
+      }
       if (button.dataset.action === "edit-user") {
         openUserDialog(context, userId);
       } else if (button.dataset.action === "reset-password") {
@@ -208,6 +211,40 @@ export function attachAdminUsers(context) {
       }
     });
   }
+}
+
+function openUserMenu(anchor, userId, context) {
+  const user = state.users.find((item) => String(item.id) === String(userId));
+  if (!user) return;
+  const canDeleteAccount = String(user.id) !== String((state.user || {}).id || "");
+  const items = [
+    {
+      label: "Edit peserta",
+      icon: "bi-pencil-square",
+      tone: "primary",
+      onSelect: () => openUserDialog(context, userId)
+    },
+    {
+      label: "Reset password",
+      icon: "bi-key",
+      onSelect: () => handleResetPassword(userId, context.refresh)
+    },
+    {
+      label: "Hapus absensi",
+      icon: "bi-calendar-x",
+      tone: "warning",
+      onSelect: () => handleDeleteUserAttendance(userId, context.refresh)
+    }
+  ];
+  if (canDeleteAccount) {
+    items.push({
+      label: "Hapus akun",
+      icon: "bi-trash3",
+      tone: "danger",
+      onSelect: () => handleDeleteUser(userId, context.refresh)
+    });
+  }
+  openActionMenu(anchor, items);
 }
 
 function openUserDialog(context, userId) {
