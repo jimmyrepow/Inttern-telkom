@@ -39,14 +39,27 @@ body {
   color: var(--pink-700);
 }
 
-.brand-box {
-  width: 68px;
-  height: 68px;
-  border-radius: 1.25rem;
-  background: linear-gradient(135deg, var(--pink-500), #f472b6);
-  color: var(--white);
-  font-size: 1.7rem;
-  font-weight: 800;
+.auth-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.brand-logo {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  object-fit: contain;
+}
+
+.brand-logo-auth {
+  width: min(286px, 84%);
+}
+
+.brand-logo-sidebar {
+  width: clamp(112px, 70%, 146px);
+  object-position: left center;
 }
 
 .btn-pink {
@@ -304,12 +317,6 @@ body {
     flex: 1 1 0;
   }
 
-  .brand-box {
-    width: 54px;
-    height: 54px;
-    font-size: 1.35rem;
-    border-radius: 1rem;
-  }
 }
 
 @media (min-width: 576px) and (max-width: 991.98px) {
@@ -745,10 +752,6 @@ body {
   border-top: 4px solid var(--pink-500) !important;
 }
 
-.brand-box {
-  box-shadow: 0 10px 24px rgba(236, 72, 153, 0.28);
-}
-
 .btn-pink {
   color: #ffffff;
 }
@@ -757,10 +760,6 @@ body {
   background: #f9a8d4;
   border: 0;
   color: #ffffff;
-}
-
-.dashboard-identity .brand-box {
-  flex: 0 0 auto;
 }
 
 .badge-soft {
@@ -822,26 +821,6 @@ body.sidebar-locked {
   gap: 0.55rem;
   padding: 0.8rem 0.8rem 0.75rem;
   border-bottom: 1px solid var(--gray-100);
-}
-
-.brand-box.brand-box-sm {
-  width: 36px;
-  height: 36px;
-  font-size: 1rem;
-  border-radius: 0.75rem;
-}
-
-.sidebar-brand strong {
-  display: block;
-  font-size: 0.76rem;
-  letter-spacing: 0.055em;
-  line-height: 1.2;
-}
-
-.sidebar-brand small {
-  display: block;
-  color: var(--gray-500);
-  font-size: 0.7rem;
 }
 
 .sidebar-close {

@@ -23,6 +23,8 @@ tidak dipakai.
   .env.example              contoh kredensial
   assets/
     css/styles.css
+    favicon.svg             ikon tab browser
+    logo.png                logo Telkom Akses (login, sidebar, error config)
     js/
       config.js             URL + publishable key Supabase
       app.js                entry point: sesi, dashboard, auto-refresh

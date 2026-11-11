@@ -12,8 +12,10 @@ export function renderLogin(message, onSuccess) {
       <div class="card rounded-4 border-0 shadow-sm auth-card">
         <div class="card-body p-4 p-md-5">
           <div class="text-center mb-4">
-            <div class="brand-box mx-auto d-flex align-items-center justify-content-center mb-3">T</div>
-            <h1 class="h4 fw-bold mb-1">TELKOM AKSES</h1>
+            <div class="auth-brand mb-3">
+              <img src="assets/logo.png" alt="Telkom Akses by Telkom Indonesia" class="brand-logo brand-logo-auth" width="1875" height="624" decoding="async" />
+            </div>
+            <h1 class="visually-hidden">TELKOM AKSES</h1>
             <p class="text-secondary small mb-0">Masuk dengan username dan password</p>
           </div>
           <form id="login-form" novalidate>

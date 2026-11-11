@@ -77,7 +77,9 @@ function renderConfigError() {
       <div class="card rounded-4 border-0 shadow-sm auth-card">
         <div class="card-body p-4 p-md-5">
           <div class="text-center mb-4">
-            <div class="brand-box mx-auto d-flex align-items-center justify-content-center mb-3">T</div>
+            <div class="auth-brand mb-3">
+              <img src="assets/logo.png" alt="Telkom Akses by Telkom Indonesia" class="brand-logo brand-logo-auth" width="1875" height="624" decoding="async" />
+            </div>
             <h1 class="h4 fw-bold mb-1">Konfigurasi belum lengkap</h1>
             <p class="text-secondary small mb-0">Isi URL dan publishable key Supabase terlebih dahulu.</p>
           </div>
@@ -270,8 +272,7 @@ function renderSidebar(role) {
   return `
     <aside class="app-sidebar" id="app-sidebar" aria-label="Navigasi utama">
       <div class="sidebar-brand">
-        <span class="brand-box brand-box-sm">T</span>
-        <strong>TELKOM AKSES</strong>
+        <img src="assets/logo.png" alt="Telkom Akses by Telkom Indonesia" class="brand-logo brand-logo-sidebar" width="1875" height="624" decoding="async" />
         <button class="sidebar-close" id="sidebar-close" type="button" aria-label="Tutup menu"><i class="bi bi-x-lg"></i></button>
       </div>
       <nav class="sidebar-nav">
