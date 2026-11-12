@@ -54,6 +54,23 @@ export const state = {
   leaderboardError: "",
   leaderboardLoadedMonth: "",
   leaderboardGeneratedAt: "",
+  farmProfile: null,
+  farmSeeds: [],
+  farmPlots: [],
+  farmRecentSteals: [],
+  farmServerNow: "",
+  farmServerOffset: 0,
+  farmLoading: false,
+  farmError: "",
+  farmLoadedFor: "",
+  farmTick: null,
+  farmSelectedPlot: 0,
+  farmAction: "",
+  farmTargets: [],
+  farmTargetsInfo: null,
+  farmTargetsLoading: false,
+  farmTargetsError: "",
+  farmTargetsLoadedFor: "",
   ui: {
     tab: "attendance",
     search: "",
@@ -143,6 +160,24 @@ export function resetSessionState() {
   state.leaderboardError = "";
   state.leaderboardLoadedMonth = "";
   state.leaderboardGeneratedAt = "";
+  if (state.farmTick) clearInterval(state.farmTick);
+  state.farmTick = null;
+  state.farmProfile = null;
+  state.farmSeeds = [];
+  state.farmPlots = [];
+  state.farmRecentSteals = [];
+  state.farmServerNow = "";
+  state.farmServerOffset = 0;
+  state.farmLoading = false;
+  state.farmError = "";
+  state.farmLoadedFor = "";
+  state.farmSelectedPlot = 0;
+  state.farmAction = "";
+  state.farmTargets = [];
+  state.farmTargetsInfo = null;
+  state.farmTargetsLoading = false;
+  state.farmTargetsError = "";
+  state.farmTargetsLoadedFor = "";
   state.ui.tab = "attendance";
   state.ui.search = "";
   state.ui.date = "";

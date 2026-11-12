@@ -49,6 +49,7 @@ tidak dipakai.
         achievements.js     ringkasan dan lencana kehadiran peserta + aktivitas admin
         theme.js            mode terang/gelap + preferensi sistem
         charts.js           grafik batang dan proporsi berbasis CSS
+        garden.js           tahap kebun, durasi, countdown, unlock plot
       services/
         photo.js            kamera, kompresi, upload, hapus foto
         location.js         GPS dan tampilan lokasi
@@ -70,6 +71,7 @@ tidak dipakai.
         announcements.js    pengumuman & agenda admin/peserta
         analytics.js        analitik tren kehadiran
         leaderboard.js      peringkat kehadiran admin dan peserta
+        farm.js             kebun: tanam, rawat, panen, curi, dan level
         suggestions.js      kotak saran admin dan peserta
         account.js          profil, avatar, pencapaian, password
         guide.js            halaman panduan penggunaan
@@ -97,7 +99,10 @@ tidak dipakai.
       0015_admin_achievements.sql
       0016_garden_leaderboard.sql
       0017_garden_leaderboard_weekend_fix.sql
-  ```
+      0018_farm_system.sql
+      0019_farm_leaderboard.sql
+      0020_farm_steal.sql
+    ```
 
 ### Aturan modularisasi
 
@@ -194,6 +199,16 @@ kehadiran sama.
 Migrasi `0017_garden_leaderboard_weekend_fix.sql` menyempurnakan perhitungan
 streak agar absensi pada akhir pekan tetap dihitung dan tidak memutus streak
 hari kerja.
+Migrasi `0018_farm_system.sql` menambahkan sistem Kebun Magang v2: tabel bibit,
+profil kebun, plot, riwayat panen, dan pembagian air/pupuk dari absensi. RPC baru
+mengatur tanam, panen, penyiraman, pemupukan, level XP, serta unlock bibit/plot.
+Migrasi `0019_farm_leaderboard.sql` memperbarui `app_leaderboard` agar
+menampilkan poin kehadiran, poin panen, bonus panen, XP/level kebun, serta total
+poin peringkat. Bonus panen dihitung maksimal sebesar poin kehadiran peserta.
+Migrasi `0020_farm_steal.sql` menambahkan mekanik curi panen: daftar target,
+riwayat pencurian, pengurangan hasil panen pemilik, serta poin curian pada
+peringkat. Fitur terbuka di Lv. 3, maksimal 3 kali/hari, 1 kali per peserta, dan
+1 kali per plot. Poin curian dibatasi maksimal 5 poin (25% hasil panen).
 Jika koneksi dari komputer tidak tersedia, buka Supabase Dashboard > SQL Editor,
 lalu jalankan isi file migrasi terbaru yang belum diterapkan secara berurutan.
 Setelah itu muat ulang aplikasi agar RPC baru terdeteksi.
@@ -301,9 +316,14 @@ token sebagai `p_token`; server memvalidasinya ke tabel `public.sessions`.
 4. Buka **Riwayat** untuk memeriksa catatan kehadiran milik sendiri dan melihat
    insight ketepatan waktu per bulan, atau **Peringkat** untuk membandingkan poin
    dan level Kebun Magang dengan peserta lain.
-5. Buka **Kotak Saran** untuk mengirim masukan berkategori dan melihat status
+5. Buka **Kebun** untuk menanam bibit di plot, menyiram dengan air dari absen
+   masuk, memberi pupuk dari absen pulang, lalu memanen saat siap. Panen memberi
+   Poin Panen dan XP; bibit serta plot baru terbuka saat level naik. Mulai Lv. 3
+   Anda bisa mencuri sebagian panen peserta lain (maksimal 3 kali/hari); poin
+   curian masuk peringkat dan pemilik tetap bisa panen dengan hasil berkurang.
+6. Buka **Kotak Saran** untuk mengirim masukan berkategori dan melihat status
    serta balasan admin.
-6. Buka **Akun** untuk mengganti nama, memilih avatar emoji/warna, melihat
+7. Buka **Akun** untuk mengganti nama, memilih avatar emoji/warna, melihat
    lencana pencapaian, atau mengganti password. Isi password lama, password baru,
    dan konfirmasi; indikator kekuatan password membantu memilih password yang
    aman. Jika lupa password lama, minta admin melakukan reset.
@@ -321,6 +341,8 @@ token sebagai `p_token`; server memvalidasinya ke tabel `public.sessions`.
 4. Buka **Peringkat** untuk melihat klasemen Kebun Magang; gunakan filter bulan
    atau **Semua waktu**. Poin: hadir 10, tepat waktu +5, pulang lengkap +2,
    catatan +1, durasi +1/jam (maks 5), streak +1 s.d. +5, datang awal +3/+2/+1.
+   Poin panen dan poin curian peserta menjadi bonus peringkat maksimal sebesar
+   poin kehadiran. Curi panen terbuka di Lv. 3 dan dibatasi 3 kali/hari.
 5. Buka **Kotak Saran** untuk membaca masukan peserta, membalas, mengubah status,
    atau menghapus saran.
 6. Buka **Panduan** kapan saja untuk langkah rinci dan pemecahan masalah.
@@ -366,7 +388,8 @@ token sebagai `p_token`; server memvalidasinya ke tabel `public.sessions`.
   - Pengaturan nama aplikasi, batas telat, jam mulai pulang, zona waktu, kantor,
     radius, dan akurasi GPS maksimal.
   - Peringkat Kebun Magang per bulan atau semua waktu dengan poin hadir, tepat
-    waktu, pulang lengkap, catatan, durasi kerja, streak, dan datang awal.
+    waktu, pulang lengkap, catatan, durasi kerja, streak, datang awal, serta
+    bonus poin panen dan curian.
   - Kotak saran: ringkasan status, pencarian, filter, balasan admin, dan hapus.
   - Export Excel (Absensi dengan foto tertanam, Akun, Izin, Koreksi, Pengumuman,
     Pengaturan, Log).
@@ -381,8 +404,11 @@ token sebagai `p_token`; server memvalidasinya ke tabel `public.sessions`.
   - Pengajuan izin, sakit, cuti, dan koreksi absensi dengan riwayat status.
   - Pengumuman dan agenda terbaru dari admin.
   - Insight kehadiran per bulan dan filter bulan pada riwayat.
-  - Peringkat Kebun Magang dengan level, tahap tanaman, misi harian, dan penanda
-    posisi sendiri.
+  - Peringkat Kebun Magang dengan level, tahap tanaman, misi harian, bonus panen,
+    dan penanda posisi sendiri.
+  - Kebun interaktif: 7 jenis bibit dengan durasi berbeda, hingga 5 plot, level
+    XP, air/pupuk dari absensi, panen normal/layu, pembukaan bibit/plot, dan curi
+    panen dengan kuota harian serta kabar kebun.
   - Kotak saran dengan kategori, status, dan balasan admin.
 - Menu **Akun** untuk semua pengguna:
   - Ringkasan akun: role, status, login terakhir, dan waktu password diubah.

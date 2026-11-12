@@ -3500,3 +3500,564 @@ body.sidebar-locked {
 [data-bs-theme="dark"] .garden-metrics strong {
   color: #f1f5f9 !important;
 }
+
+/* ========================================================================== */
+/* Kebun Magang v2: plot, tanam, rawat, panen                                   */
+/* ========================================================================== */
+
+.farm-hero {
+  background: linear-gradient(135deg, #ecfdf5 0%, #ffffff 52%, #fefce8 100%);
+  border: 1px solid #bbf7d0 !important;
+}
+
+.farm-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(235px, 1fr));
+  gap: 0.85rem;
+}
+
+.farm-plot {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  min-height: 250px;
+  padding: 0.9rem;
+  border: 1px solid var(--gray-200);
+  border-top: 4px solid var(--seed-color, #cbd5e1);
+  border-radius: 1rem;
+  background: #fff;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.04);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.farm-plot:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.08);
+}
+
+.farm-plot.is-ready {
+  border-color: #86efac;
+  border-top-color: #22c55e;
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.12);
+}
+
+.farm-plot.is-withered {
+  border-color: #fcd34d;
+  border-top-color: #f59e0b;
+}
+
+.farm-plot.is-dead {
+  border-color: #fca5a5;
+  border-top-color: #ef4444;
+}
+
+.farm-plot.is-locked {
+  border-style: dashed;
+  border-top-style: solid;
+  border-top-color: #cbd5e1;
+  background: #f8fafc;
+}
+
+.farm-plot.is-empty {
+  border-top-color: #cbd5e1;
+}
+
+.farm-plot-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.farm-plot-index {
+  color: var(--gray-500);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.farm-plot-plant {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.08rem;
+  min-width: 0;
+}
+
+.farm-plant-emoji {
+  display: block;
+  margin-bottom: 0.1rem;
+  font-size: 2.15rem;
+  line-height: 1;
+  filter: drop-shadow(0 3px 3px rgba(15, 23, 42, 0.12));
+}
+
+.farm-plot-plant strong {
+  color: var(--gray-900);
+  font-size: 0.95rem;
+}
+
+.farm-plot-empty,
+.farm-plot-locked {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 1rem 0;
+  color: var(--gray-500);
+  text-align: center;
+}
+
+.farm-plot-empty i,
+.farm-plot-locked i {
+  color: var(--gray-400);
+  font-size: 1.8rem;
+}
+
+.farm-plot-empty span,
+.farm-plot-locked span {
+  font-size: 0.75rem;
+}
+
+.farm-plot-locked strong {
+  color: var(--gray-700);
+  font-size: 0.85rem;
+}
+
+.farm-timer {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: 0.4rem;
+  padding: 0.4rem 0.65rem;
+  border-radius: 999px;
+  background: #f0fdf4;
+  color: #15803d;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.farm-timer i {
+  color: #16a34a;
+}
+
+.farm-progress {
+  height: 8px;
+  border-radius: 999px;
+  background: #e2e8f0;
+}
+
+.farm-progress .progress-bar {
+  border-radius: 999px;
+  background: linear-gradient(90deg, #22c55e, #84cc16);
+  transition: width 0.3s linear;
+}
+
+.farm-status-line {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: 0.4rem;
+  padding: 0.4rem 0.65rem;
+  border-radius: 0.7rem;
+  background: #f8fafc;
+  color: var(--gray-600);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.farm-status-line.is-ready {
+  background: #f0fdf4;
+  color: #15803d;
+}
+
+.farm-status-line.is-withered {
+  background: #fffbeb;
+  color: #b45309;
+}
+
+.farm-status-line.is-dead {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.farm-plot-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  min-height: 1.35rem;
+}
+
+.farm-mini-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.16rem 0.45rem;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 0.66rem;
+  font-weight: 700;
+}
+
+.farm-plot-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: auto;
+}
+
+.farm-plot-actions .btn {
+  flex: 1 1 auto;
+  min-width: calc(50% - 0.2rem);
+}
+
+.farm-tips-card {
+  background: #fffdf5;
+}
+
+.farm-tips-icon {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.8rem;
+  background: #fef9c3;
+  color: #a16207;
+  font-size: 1.2rem;
+}
+
+.farm-seed-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.farm-seed-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.7rem;
+  border: 1px solid var(--gray-200);
+  border-left: 4px solid var(--seed-color, #10b981);
+  border-radius: 0.8rem;
+  background: #fff;
+}
+
+.farm-seed-card.is-locked {
+  background: #f8fafc;
+  opacity: 0.62;
+}
+
+.farm-seed-emoji {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.farm-seed-copy {
+  min-width: 0;
+}
+
+.farm-seed-copy strong {
+  display: block;
+  color: var(--gray-900);
+  font-size: 0.86rem;
+}
+
+.farm-seed-copy .small {
+  line-height: 1.3;
+}
+
+@media (max-width: 575.98px) {
+  .farm-seed-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .farm-plot-actions .btn {
+    min-width: 100%;
+  }
+}
+
+[data-bs-theme="dark"] .farm-hero {
+  background: linear-gradient(135deg, #052e16 0%, #111a2e 52%, #2a2410 100%);
+  border-color: #14532d !important;
+}
+
+[data-bs-theme="dark"] .farm-plot,
+[data-bs-theme="dark"] .farm-seed-card {
+  background: #0f172a;
+  border-color: #243044;
+}
+
+[data-bs-theme="dark"] .farm-plot.is-locked,
+[data-bs-theme="dark"] .farm-seed-card.is-locked {
+  background: #0b1220;
+}
+
+[data-bs-theme="dark"] .farm-plot-plant strong,
+[data-bs-theme="dark"] .farm-seed-copy strong,
+[data-bs-theme="dark"] .farm-plot-locked strong {
+  color: #f1f5f9;
+}
+
+[data-bs-theme="dark"] .farm-timer {
+  background: #052e16;
+  color: #86efac;
+}
+
+[data-bs-theme="dark"] .farm-progress {
+  background: #1e293b;
+}
+
+[data-bs-theme="dark"] .farm-status-line {
+  background: #111827;
+  color: #cbd5e1;
+}
+
+[data-bs-theme="dark"] .farm-status-line.is-ready {
+  background: #052e16;
+  color: #86efac;
+}
+
+[data-bs-theme="dark"] .farm-status-line.is-withered {
+  background: #2a1d05;
+  color: #fcd34d;
+}
+
+[data-bs-theme="dark"] .farm-status-line.is-dead {
+  background: #2a0b0b;
+  color: #fca5a5;
+}
+
+[data-bs-theme="dark"] .farm-mini-badge {
+  background: #172554;
+  color: #bfdbfe;
+}
+
+[data-bs-theme="dark"] .farm-tips-card {
+  background: #151a10;
+}
+
+[data-bs-theme="dark"] .farm-tips-icon {
+  background: #2a2410;
+  color: #fde047;
+}
+
+.farm-mini-badge.is-stolen {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.farm-steal-card {
+  background: linear-gradient(180deg, #fff7f7 0%, #ffffff 70%);
+}
+
+.farm-steal-icon {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.8rem;
+  background: #fee2e2;
+  color: #b91c1c;
+  font-size: 1.2rem;
+}
+
+.farm-steal-icon.is-locked {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.farm-steal-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.farm-steal-target {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 0.75rem;
+  border: 1px solid #fecaca;
+  border-radius: 0.9rem;
+  background: #fff;
+}
+
+.farm-steal-owner {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.farm-steal-owner strong {
+  display: block;
+  color: var(--gray-900);
+  font-size: 0.84rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.farm-steal-owner span {
+  display: block;
+  color: var(--gray-500);
+  font-size: 0.68rem;
+}
+
+.farm-steal-plant {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 0.6rem;
+  border-radius: 0.7rem;
+  background: color-mix(in srgb, var(--seed-color, #10b981) 8%, #ffffff);
+}
+
+.farm-steal-emoji {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.farm-steal-plant strong {
+  display: block;
+  color: var(--gray-900);
+  font-size: 0.8rem;
+}
+
+.farm-steal-plant span {
+  display: block;
+  color: var(--gray-500);
+  font-size: 0.66rem;
+}
+
+.farm-steal-points {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.1rem;
+  padding: 0.2rem 0.45rem;
+  border-radius: 999px;
+  background: #fee2e2;
+  color: #b91c1c;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.farm-steal-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 1.1rem 0.75rem;
+  border: 1px dashed var(--gray-300, #d1d5db);
+  border-radius: 0.8rem;
+  background: #fafafa;
+  color: var(--gray-500);
+  font-size: 0.78rem;
+  text-align: center;
+}
+
+.farm-steal-empty i {
+  color: var(--gray-400, #9ca3af);
+  font-size: 1.2rem;
+}
+
+.farm-steal-log {
+  background: #fffafa;
+}
+
+.farm-steal-log-list {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.farm-steal-log-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid #fecaca;
+  border-radius: 0.7rem;
+  background: #fff;
+}
+
+.farm-steal-log-emoji {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.farm-steal-log-item strong {
+  display: block;
+  color: var(--gray-900);
+  font-size: 0.75rem;
+}
+
+.farm-steal-log-item span {
+  display: block;
+  color: var(--gray-500);
+  font-size: 0.66rem;
+}
+
+@media (max-width: 767.98px) {
+  .farm-steal-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+[data-bs-theme="dark"] .farm-mini-badge.is-stolen {
+  background: #2a0b0b;
+  color: #fca5a5;
+}
+
+[data-bs-theme="dark"] .farm-steal-card,
+[data-bs-theme="dark"] .farm-steal-log {
+  background: #1a0f12;
+}
+
+[data-bs-theme="dark"] .farm-steal-icon {
+  background: #2a0b0b;
+  color: #fca5a5;
+}
+
+[data-bs-theme="dark"] .farm-steal-icon.is-locked {
+  background: #1e293b;
+  color: #94a3b8;
+}
+
+[data-bs-theme="dark"] .farm-steal-target,
+[data-bs-theme="dark"] .farm-steal-log-item {
+  background: #0f172a;
+  border-color: #4c1d1d;
+}
+
+[data-bs-theme="dark"] .farm-steal-owner strong,
+[data-bs-theme="dark"] .farm-steal-plant strong,
+[data-bs-theme="dark"] .farm-steal-log-item strong {
+  color: #f1f5f9;
+}
+
+[data-bs-theme="dark"] .farm-steal-plant {
+  background: #111827;
+}
+
+[data-bs-theme="dark"] .farm-steal-points {
+  background: #2a0b0b;
+  color: #fca5a5;
+}
+
+[data-bs-theme="dark"] .farm-steal-empty {
+  background: #0b1220;
+  border-color: #243044;
+}

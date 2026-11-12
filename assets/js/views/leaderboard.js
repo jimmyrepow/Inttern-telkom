@@ -4,18 +4,11 @@ import { esc } from "../lib/dom.js";
 import { getTodayDate, formatMonth } from "../lib/format.js";
 import { renderAvatar } from "../lib/avatar.js";
 import { statCard } from "../lib/render.js";
+import { gardenStage, gardenProgress } from "../lib/garden.js";
 
 let requestSerial = 0;
 
 const LEVEL_UNIT = 40;
-const STAGES = [
-  { min: 10, emoji: "🌳", label: "Rindang" },
-  { min: 8, emoji: "🌻", label: "Subur" },
-  { min: 6, emoji: "🌷", label: "Berbunga" },
-  { min: 4, emoji: "🪴", label: "Muda" },
-  { min: 3, emoji: "🌿", label: "Tunas" },
-  { min: 1, emoji: "🌱", label: "Bibit" }
-];
 
 function currentMonth() {
   return getTodayDate().slice(0, 7);
@@ -51,25 +44,34 @@ function gardenLevel(points) {
   return 1 + Math.floor(Math.sqrt(value / LEVEL_UNIT));
 }
 
-function gardenStage(level) {
-  return STAGES.find((stage) => level >= stage.min) || STAGES[STAGES.length - 1];
+function farmLevelOf(row) {
+  const level = Number(row && row.farm_level);
+  if (Number.isFinite(level) && level > 0) return Math.floor(level);
+  return gardenLevel(pointsOf(row));
 }
 
 function gardenOf(row) {
   const points = pointsOf(row);
-  const level = gardenLevel(points);
+  const level = farmLevelOf(row);
   const stage = gardenStage(level);
-  const start = LEVEL_UNIT * (level - 1) * (level - 1);
-  const next = LEVEL_UNIT * level * level;
-  const progress =
-    next > start ? Math.max(0, Math.min(100, Math.round(((points - start) / (next - start)) * 100))) : 0;
+  const hasFarm = row && row.farm_level !== undefined && row.farm_level !== null;
+  const xp = hasFarm ? Math.max(0, Number(row.farm_xp) || 0) : points;
+  const start = hasFarm
+    ? Math.max(0, Number(row.farm_level_xp) || 0)
+    : LEVEL_UNIT * (level - 1) * (level - 1);
+  const next = hasFarm
+    ? Math.max(start + 1, Number(row.farm_next_xp) || 0)
+    : LEVEL_UNIT * level * level;
+  const progress = gardenProgress(xp, start, next);
   return {
     points,
     level,
     start,
     next,
     progress,
-    remaining: Math.max(0, next - points),
+    remaining: Math.max(0, next - xp),
+    xp,
+    maxed: hasFarm ? Boolean(row.farm_max_level) : false,
     emoji: stage.emoji,
     label: stage.label
   };
@@ -111,7 +113,8 @@ function renderPodiumCard(row) {
       <div class="leaderboard-podium-level">Lv. ${garden.level} · ${esc(garden.label)}</div>
       <div class="leaderboard-podium-metrics">
         <span><i class="bi bi-fire"></i> <strong>${Number(row.current_streak) || 0}</strong> streak</span>
-        <span><i class="bi bi-basket"></i> <strong>${Number(row.completed_days) || 0}</strong> panen</span>
+        <span><i class="bi bi-basket"></i> <strong>${Number(row.farm_harvests) || 0}</strong> panen</span>
+        <span><i class="bi bi-flower1"></i> <strong>${Number(row.farm_points) || 0}</strong> poin panen</span>
       </div>
     </article>
   `;
@@ -158,10 +161,10 @@ function renderRows(rows, ready) {
         </td>
         <td data-label="Kebun">${renderGardenBadge(row)}</td>
         <td data-label="Poin"><strong>${pointsOf(row)}</strong></td>
+        <td data-label="Kehadiran">${Number(row.attendance_points) || 0}</td>
+        <td data-label="Panen" title="Poin panen ${Number(row.farm_points) || 0} · curian ${Number(row.farm_steal_points) || 0} · bonus dihitung ${Number(row.farm_bonus) || 0}">${Number(row.farm_bonus) || 0}<div class="small text-secondary">${Number(row.farm_points) || 0} poin${Number(row.farm_steals) > 0 ? " · " + Number(row.farm_steals) + " curian" : ""}</div></td>
         <td data-label="Hadir">${Number(row.present_days) || 0} hari</td>
         <td data-label="Tepat waktu">${Number(row.on_time_days) || 0} hari</td>
-        <td data-label="Telat">${Number(row.late_days) || 0} hari</td>
-        <td data-label="Panen" title="Catatan ${Number(row.note_days) || 0} hari · Datang awal ${Number(row.early_bird_days) || 0} hari">${Number(row.completed_days) || 0} hari</td>
         <td data-label="Streak"><span class="garden-streak"><i class="bi bi-fire"></i> ${Number(row.current_streak) || 0} hari</span></td>
       </tr>
     `
@@ -240,6 +243,10 @@ function renderPersonalGarden(myRow, ready) {
   const garden = gardenOf(myRow);
   const todayRow = todayRowForMe();
   const attendedToday = Boolean(todayRow && todayRow.check_in);
+  const nextLevelLabel = garden.maxed ? "Maks" : "Lv. " + (garden.level + 1);
+  const progressNote = garden.maxed
+    ? "Level kebun sudah maksimal."
+    : garden.remaining + " XP lagi menuju Lv. " + (garden.level + 1);
   return `
     <div class="card rounded-4 border-0 shadow-sm garden-hero mb-3">
       <div class="card-body p-3 p-md-4">
@@ -247,11 +254,12 @@ function renderPersonalGarden(myRow, ready) {
           <div>
             <div class="garden-eyebrow">Kebun Anda</div>
             <h2 class="h5 fw-bold mb-1"><span class="garden-hero-emoji" aria-hidden="true">${garden.emoji}</span> ${esc(garden.label)} <span class="badge garden-level-badge rounded-pill">Lv. ${garden.level}</span></h2>
-            <div class="small text-secondary">${garden.points} poin · ${garden.remaining} poin lagi menuju Lv. ${garden.level + 1}</div>
+            <div class="small text-secondary">${garden.points} poin · ${garden.xp} XP · ${Number(myRow.farm_total_harvests) || 0} kali panen</div>
           </div>
           <div class="text-end">
             <div class="garden-streak"><i class="bi bi-fire"></i> ${Number(myRow.current_streak) || 0} hari beruntun</div>
             <div class="small text-secondary">Rekor ${Number(myRow.best_streak) || 0} hari</div>
+            <button class="btn btn-sm btn-primary rounded-pill mt-2" type="button" data-nav="farm"><i class="bi bi-flower1 me-1"></i>Buka Kebun</button>
           </div>
         </div>
         <div class="progress garden-progress" role="progressbar" aria-valuenow="${garden.progress}" aria-valuemin="0" aria-valuemax="100" aria-label="Kemajuan kebun level ${garden.level}">
@@ -260,12 +268,14 @@ function renderPersonalGarden(myRow, ready) {
         <div class="d-flex justify-content-between small text-secondary mt-1">
           <span>Lv. ${garden.level}</span>
           <span>${garden.progress}%</span>
-          <span>Lv. ${garden.level + 1}</span>
+          <span>${nextLevelLabel}</span>
         </div>
+        <div class="small text-secondary mt-1">${progressNote}</div>
         <div class="garden-metrics mt-3">
           <span><i class="bi bi-calendar-check"></i><strong>${Number(myRow.present_days) || 0}</strong> hadir</span>
-          <span><i class="bi bi-basket"></i><strong>${Number(myRow.completed_days) || 0}</strong> panen</span>
-          <span><i class="bi bi-journal-text"></i><strong>${Number(myRow.note_days) || 0}</strong> catatan</span>
+          <span><i class="bi bi-basket"></i><strong>${Number(myRow.farm_harvests) || 0}</strong> panen</span>
+          <span><i class="bi bi-flower1"></i><strong>${Number(myRow.farm_points) || 0}</strong> poin kebun</span>
+          <span><i class="bi bi-incognito"></i><strong>${Number(myRow.farm_steal_points) || 0}</strong> curian</span>
           <span><i class="bi bi-sunrise"></i><strong>${Number(myRow.early_bird_days) || 0}</strong> datang awal</span>
         </div>
         <hr class="my-3" />
@@ -274,6 +284,7 @@ function renderPersonalGarden(myRow, ready) {
           ${attendedToday ? '<span class="badge bg-success rounded-pill">Sudah absen</span>' : '<button class="btn btn-sm btn-primary rounded-pill" type="button" data-nav="absen">Absen sekarang</button>'}
         </div>
         <ul class="garden-quests">${renderQuests(todayRow)}</ul>
+        <div class="small text-secondary mt-2">Air tersedia: ${Number(myRow.farm_water) || 0} · Pupuk tersedia: ${Number(myRow.farm_fertilizer) || 0}. Absen masuk/pulang untuk menambah stok.</div>
       </div>
     </div>
   `;
@@ -287,7 +298,9 @@ function renderRulesCard() {
     { icon: "bi-journal-text", label: "Isi catatan", value: "+1" },
     { icon: "bi-hourglass-split", label: "Durasi kerja", value: "+1/jam, maks +5" },
     { icon: "bi-fire", label: "Streak", value: "+1 s.d. +5/hari" },
-    { icon: "bi-sunrise", label: "Datang awal", value: "+3 / +2 / +1" }
+    { icon: "bi-sunrise", label: "Datang awal", value: "+3 / +2 / +1" },
+    { icon: "bi-flower1", label: "Panen bibit", value: "+1 s.d. +25" },
+    { icon: "bi-incognito", label: "Curi panen", value: "25%, maks +5" }
   ];
   return `
     <div class="card rounded-4 border-0 shadow-sm garden-rules-card mb-3">
@@ -311,7 +324,7 @@ function renderRulesCard() {
               )
               .join("")}
           </div>
-          <div class="small text-secondary mt-3">Streak dihitung dari hari kerja berturut-turut. Datang awal diberikan kepada 3 peserta paling awal absen masuk setiap hari. Kebun naik level setiap kelipatan poin.</div>
+          <div class="small text-secondary mt-3">Streak dihitung dari hari kerja berturut-turut. Datang awal diberikan kepada 3 peserta paling awal absen masuk setiap hari. Kebun naik level dari XP panen. Poin panen dan poin curian menjadi bonus peringkat maksimal sebesar poin kehadiran Anda. Air mempercepat 15 menit, pupuk menambah 20% hasil panen. Curi panen terbuka di Lv. 3, maksimal 3 kali/hari, 1 kali per peserta, dan 1 kali per plot.</div>
         </div>
       </details>
     </div>
@@ -326,7 +339,11 @@ export function renderLeaderboard() {
   const top = rows[0];
   const topGarden = top ? gardenOf(top) : null;
   const totalHarvest = rows.reduce(
-    (total, row) => total + (Number(row.completed_days) || 0),
+    (total, row) => total + (Number(row.farm_harvests) || 0),
+    0
+  );
+  const totalFarmPoints = rows.reduce(
+    (total, row) => total + (Number(row.farm_points) || 0),
     0
   );
   const averagePoints = rows.length
@@ -340,8 +357,8 @@ export function renderLeaderboard() {
   return `
     <div class="stats-grid mb-4">
       ${statCard("Peserta", ready ? String(rows.length) : "-", periodLabel(key))}
-      ${statCard("Total panen", ready ? String(totalHarvest) : "-", "Absen pulang lengkap")}
-      ${statCard("Kebun teratas", ready && top ? topGarden.emoji + " " + top.name : "-", ready && top ? "Lv. " + topGarden.level + " · " + topGarden.points + " poin" : "Belum ada data")}
+      ${statCard("Total panen", ready ? String(totalHarvest) : "-", ready ? totalFarmPoints + " poin kebun" : "Belum ada data")}
+      ${statCard("Kebun teratas", ready && top ? topGarden.emoji + " " + top.name : "-", ready && top ? "Lv. " + topGarden.level + " · " + topGarden.xp + " XP" : "Belum ada data")}
       ${isIntern
         ? statCard("Peringkat Anda", ready && myRow ? "#" + myRow.rank : "-", ready && myRow ? pointsOf(myRow) + " poin · Lv. " + gardenOf(myRow).level : "Belum ada data")
         : statCard("Rata-rata poin", ready ? String(averagePoints) : "-", "Seluruh peserta")}
@@ -378,10 +395,10 @@ export function renderLeaderboard() {
                 <th>Peserta</th>
                 <th>Kebun</th>
                 <th>Poin</th>
+                <th>Kehadiran</th>
+                <th>Panen</th>
                 <th>Hadir</th>
                 <th>Tepat waktu</th>
-                <th>Telat</th>
-                <th>Panen</th>
                 <th>Streak</th>
               </tr>
             </thead>

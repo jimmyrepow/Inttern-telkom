@@ -1,4 +1,4 @@
-const CACHE_NAME = "telkom-absensi-v3";
+const CACHE_NAME = "telkom-absensi-v5";
 const CORE_ASSETS = [
   "./",
   "./index.html",

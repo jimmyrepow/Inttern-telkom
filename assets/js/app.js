@@ -16,6 +16,7 @@ import { renderIntern, attachInternEvents } from "./views/intern.js";
 import { renderAccount, attachAccountEvents } from "./views/account.js";
 import { renderSuggestions, attachSuggestionsEvents } from "./views/suggestions.js";
 import { renderLeaderboard, attachLeaderboardEvents } from "./views/leaderboard.js";
+import { renderFarm, attachFarmEvents, stopFarmTimer } from "./views/farm.js";
 import { renderLeaves, attachLeavesEvents } from "./views/leaves.js";
 import {
   renderAnnouncements,
@@ -55,6 +56,7 @@ const NAV = {
     { id: "leaves", label: "Izin & Koreksi", icon: "bi-calendar2-heart" },
     { id: "announcements", label: "Pengumuman", icon: "bi-megaphone" },
     { id: "leaderboard", label: "Peringkat", icon: "bi-trophy" },
+    { id: "farm", label: "Kebun", icon: "bi-flower1" },
     { id: "suggestions", label: "Kotak Saran", icon: "bi-chat-square-text" },
     { id: "account", label: "Akun", icon: "bi-person-gear" },
     { id: "guide", label: "Panduan", icon: "bi-book" }
@@ -81,6 +83,7 @@ const PAGE_META = {
     leaves: { title: "Izin & Koreksi", subtitle: "Ajukan izin, sakit, cuti, atau koreksi absensi" },
     announcements: { title: "Pengumuman", subtitle: "Informasi dan agenda terbaru dari admin" },
     leaderboard: { title: "Peringkat", subtitle: "Klasemen kehadiran peserta magang" },
+    farm: { title: "Kebun Magang", subtitle: "Tanam, rawat, panen, dan curi panen peserta lain" },
     suggestions: { title: "Kotak Saran", subtitle: "Kirim masukan dan lihat balasan admin" },
     account: { title: "Akun Saya", subtitle: "Ubah nama dan password akun Anda" },
     guide: { title: "Panduan", subtitle: "Cara memakai website untuk peserta" }
@@ -251,6 +254,7 @@ function canAutoRefresh() {
     state.ui.tab === "settings" ||
     state.ui.tab === "suggestions" ||
     state.ui.tab === "leaderboard" ||
+    state.ui.tab === "farm" ||
     state.ui.tab === "guide" ||
     state.ui.tab === "account" ||
     state.ui.tab === "leaves" ||
@@ -443,6 +447,7 @@ function renderDashboard() {
     return;
   }
   state.page = "dashboard";
+  stopFarmTimer();
   const role = roleKey();
   const isAdmin = role === "admin";
   const nav = NAV[role];
@@ -451,6 +456,7 @@ function renderDashboard() {
   const isAccount = state.ui.tab === "account";
   const isSuggestions = state.ui.tab === "suggestions";
   const isLeaderboard = state.ui.tab === "leaderboard";
+  const isFarm = state.ui.tab === "farm";
   const isAnnouncements = state.ui.tab === "announcements";
   const isLeaves = state.ui.tab === "leaves";
   const content = isAccount
@@ -459,13 +465,15 @@ function renderDashboard() {
       ? renderSuggestions()
       : isLeaderboard
         ? renderLeaderboard()
-        : isAnnouncements
-          ? renderAnnouncements()
-          : isLeaves
-            ? renderLeaves()
-            : isAdmin
-              ? renderAdmin()
-              : renderIntern();
+        : isFarm
+          ? renderFarm()
+          : isAnnouncements
+            ? renderAnnouncements()
+            : isLeaves
+              ? renderLeaves()
+              : isAdmin
+                ? renderAdmin()
+                : renderIntern();
 
   app.innerHTML = `
     <div class="app-shell ${state.ui.sidebarOpen ? "sidebar-open" : ""}" id="app-shell">
@@ -493,6 +501,8 @@ function renderDashboard() {
     attachSuggestionsEvents({ rerender: renderDashboard, refresh: refreshData });
   else if (isLeaderboard)
     attachLeaderboardEvents({ rerender: renderDashboard, refresh: refreshData });
+  else if (isFarm)
+    attachFarmEvents({ rerender: renderDashboard, refresh: refreshData });
   else if (isAnnouncements)
     attachAnnouncementsEvents({ rerender: renderDashboard, refresh: refreshData });
   else if (isLeaves)
