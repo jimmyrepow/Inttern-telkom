@@ -119,8 +119,8 @@ function renderAttendanceRows(rows) {
         <td data-label="Masuk">${esc(shortTime(row.check_in))}</td>
         <td data-label="Pulang">${esc(shortTime(row.check_out))}</td>
         <td data-label="Status">${statusBadge(row.status, Boolean(row.check_in))}</td>
-        <td data-label="Foto masuk">${renderPhoto(row.photo_url)}</td>
-        <td data-label="Foto pulang">${renderPhoto(row.photo_out_url)}</td>
+        <td data-label="Foto masuk">${renderPhoto(row.photo_url, "Foto masuk", row.name + " · " + row.date)}</td>
+        <td data-label="Foto pulang">${renderPhoto(row.photo_out_url, "Foto pulang", row.name + " · " + row.date)}</td>
         <td class="small" data-label="Lokasi">${renderLocation(row.location)}</td>
         <td class="small" data-label="Catatan">${esc(row.note || "-")}</td>
         <td data-label="Aksi">

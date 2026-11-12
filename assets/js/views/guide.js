@@ -97,7 +97,7 @@ export function renderGuide(role) {
           </div>
           <div>
             <h4>Peringkat peserta</h4>
-            <p>Menu <strong>Peringkat</strong> menampilkan klasemen kehadiran. Poin dihitung dari hari hadir (10), bonus tepat waktu (5), dan absen pulang lengkap (2). Gunakan filter bulan atau <em>Semua waktu</em> untuk melihat periode lain.</p>
+            <p>Menu <strong>Peringkat</strong> menampilkan klasemen Kebun Magang. Poin dihitung dari hari hadir (10), tepat waktu (5), pulang lengkap (2), catatan (1), durasi kerja (1/jam, maksimal 5), streak (1 s.d. 5), dan datang paling awal (3/2/1 untuk tiga peserta pertama). Gunakan filter bulan atau <em>Semua waktu</em> untuk melihat periode lain.</p>
           </div>
         </div>
       </section>
@@ -118,13 +118,13 @@ export function renderGuide(role) {
         <section class="guide-card">
           <h3><span class="guide-icon"><i class="bi bi-clock-history"></i></span> Riwayat absensi</h3>
           <p>Menu Riwayat menampilkan absensi pribadi: tanggal, jam masuk, jam pulang, status tepat waktu/telat, dan foto. Kartu insight merangkum ketepatan waktu bulan ini.</p>
-          <p class="mb-0">Gunakan filter bulan untuk melihat periode tertentu, atau tombol <em>Semua</em> untuk menampilkan data terbaru. Tekan thumbnail foto untuk membukanya di tab baru.</p>
+          <p class="mb-0">Gunakan filter bulan untuk melihat periode tertentu, atau tombol <em>Semua</em> untuk menampilkan data terbaru. Tekan thumbnail foto untuk membuka pratinjau besar tanpa meninggalkan halaman.</p>
         </section>
 
         <section class="guide-card">
-          <h3><span class="guide-icon"><i class="bi bi-trophy"></i></span> Peringkat kehadiran</h3>
-          <p>Menu <strong>Peringkat</strong> menampilkan klasemen seluruh peserta magang. Poin berasal dari hari hadir (<strong>10 poin</strong>), bonus tepat waktu (<strong>+5 poin</strong>), dan absen pulang lengkap (<strong>+2 poin</strong>).</p>
-          <p class="mb-0">Gunakan filter bulan untuk melihat peringkat bulan tertentu atau <em>Semua waktu</em> untuk akumulasi. Baris dan kartu bertanda <strong>Anda</strong> menunjukkan posisi Anda sendiri.</p>
+          <h3><span class="guide-icon"><i class="bi bi-flower1"></i></span> Kebun Magang</h3>
+          <p>Menu <strong>Peringkat</strong> menampilkan klasemen Kebun Magang. Poin berasal dari hari hadir (<strong>10 poin</strong>), bonus tepat waktu (<strong>+5 poin</strong>), absen pulang lengkap (<strong>+2 poin</strong>), catatan harian (<strong>+1 poin</strong>), durasi kerja (<strong>+1 poin/jam</strong>, maksimal 5), streak (<strong>+1 s.d. +5 poin</strong>), dan datang paling awal (<strong>+3/+2/+1 poin</strong> untuk tiga peserta pertama setiap hari).</p>
+          <p class="mb-0">Poin membentuk level kebun: Bibit, Tunas, Muda, Berbunga, Subur, lalu Rindang. Gunakan filter bulan untuk melihat peringkat periode tertentu atau <em>Semua waktu</em> untuk akumulasi. Baris dan kartu bertanda <strong>Anda</strong> menunjukkan posisi Anda sendiri.</p>
         </section>
 
         <section class="guide-card">

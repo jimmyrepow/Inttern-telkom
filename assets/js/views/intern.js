@@ -467,7 +467,10 @@ function renderInternHistory(rows) {
   }
   return rows
     .map((row) => {
-      const photos = renderPhoto(row.photo_url) + " " + renderPhoto(row.photo_out_url);
+      const photos =
+        renderPhoto(row.photo_url, "Foto masuk", row.date) +
+        " " +
+        renderPhoto(row.photo_out_url, "Foto pulang", row.date);
       return `
         <tr>
           <td class="text-nowrap" data-label="Tanggal">${esc(row.date)}</td>
@@ -493,8 +496,8 @@ function renderInternFullHistory(rows) {
         <td data-label="Masuk">${esc(shortTime(row.check_in))}</td>
         <td data-label="Pulang">${esc(shortTime(row.check_out))}</td>
         <td data-label="Status">${statusBadge(row.status, Boolean(row.check_in))}</td>
-        <td data-label="Foto masuk">${renderPhoto(row.photo_url)}</td>
-        <td data-label="Foto pulang">${renderPhoto(row.photo_out_url)}</td>
+        <td data-label="Foto masuk">${renderPhoto(row.photo_url, "Foto masuk", row.date)}</td>
+        <td data-label="Foto pulang">${renderPhoto(row.photo_out_url, "Foto pulang", row.date)}</td>
       </tr>
     `
     )

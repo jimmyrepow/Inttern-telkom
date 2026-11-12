@@ -14,14 +14,28 @@ export function statCard(label, value, sub, id) {
   `;
 }
 
-export function renderPhoto(url) {
+export function renderPhoto(url, label, meta) {
   if (!url) return '<span class="text-secondary small">-</span>';
+  const title = label || "Foto absensi";
+  const description = meta || "Klik untuk memperbesar foto";
   return (
-    '<a href="' +
+    '<a class="photo-thumb-link" href="' +
     esc(url) +
-    '" target="_blank" rel="noopener" title="Buka foto"><img class="photo-thumb" src="' +
+    '" data-photo-view="' +
     esc(url) +
-    '" alt="Foto absensi" loading="lazy" /></a>'
+    '" data-photo-title="' +
+    esc(title) +
+    '" data-photo-meta="' +
+    esc(description) +
+    '" title="Lihat ' +
+    esc(title) +
+    '" aria-label="Lihat ' +
+    esc(title) +
+    '"><img class="photo-thumb" src="' +
+    esc(url) +
+    '" alt="' +
+    esc(title) +
+    '" loading="lazy" /></a>'
   );
 }
 

@@ -95,6 +95,8 @@ tidak dipakai.
       0013_attendance_leaderboard.sql
       0014_leave_correction_announcement.sql
       0015_admin_achievements.sql
+      0016_garden_leaderboard.sql
+      0017_garden_leaderboard_weekend_fix.sql
   ```
 
 ### Aturan modularisasi
@@ -184,6 +186,14 @@ audit terfilter. `app_bootstrap` dan `app_export_data` ikut diperbarui.
 Migrasi `0015_admin_achievements.sql` menambahkan RPC `app_admin_achievement_stats`
 untuk menghitung statistik pencapaian admin: jumlah peninjauan, persetujuan,
 pengumuman yang diterbitkan, aksi, dan hari aktif.
+Migrasi `0016_garden_leaderboard.sql` memperbarui RPC `app_leaderboard` menjadi
+sistem poin "Kebun Magang": bonus tepat waktu, pulang lengkap, catatan, durasi
+kerja, streak hari kerja, dan datang awal. Setiap peserta memiliki level serta
+tahap kebun yang berbeda sehingga peringkat tidak lagi seri hanya karena jumlah
+kehadiran sama.
+Migrasi `0017_garden_leaderboard_weekend_fix.sql` menyempurnakan perhitungan
+streak agar absensi pada akhir pekan tetap dihitung dan tidak memutus streak
+hari kerja.
 Jika koneksi dari komputer tidak tersedia, buka Supabase Dashboard > SQL Editor,
 lalu jalankan isi file migrasi terbaru yang belum diterapkan secara berurutan.
 Setelah itu muat ulang aplikasi agar RPC baru terdeteksi.
@@ -277,7 +287,7 @@ token sebagai `p_token`; server memvalidasinya ke tabel `public.sessions`.
 - Layout mobile-first: tabel beralih menjadi kartu di HP, grid statistik menjadi
   3 kolom di tablet, dan desktop memakai sidebar penuh dengan konten yang
   dibatasi lebarnya.
-- Menu **Panduan** memuat langkah penggunaan sesuai peran, peringkat kehadiran,
+- Menu **Panduan** memuat langkah penggunaan sesuai peran, Kebun Magang,
   keamanan akun, sinkronisasi, serta solusi untuk kendala GPS, kamera, dan login.
 
 ### Panduan singkat peserta
@@ -290,7 +300,7 @@ token sebagai `p_token`; server memvalidasinya ke tabel `public.sessions`.
    dinonaktifkan dan server juga menolak permintaan pulang lebih awal.
 4. Buka **Riwayat** untuk memeriksa catatan kehadiran milik sendiri dan melihat
    insight ketepatan waktu per bulan, atau **Peringkat** untuk membandingkan poin
-   kehadiran dengan peserta lain.
+   dan level Kebun Magang dengan peserta lain.
 5. Buka **Kotak Saran** untuk mengirim masukan berkategori dan melihat status
    serta balasan admin.
 6. Buka **Akun** untuk mengganti nama, memilih avatar emoji/warna, melihat
@@ -308,8 +318,9 @@ token sebagai `p_token`; server memvalidasinya ke tabel `public.sessions`.
 3. Buka **Pengaturan** untuk mengatur batas telat masuk, jam mulai absen pulang,
    zona waktu, lokasi/radius kantor, dan akurasi GPS maksimal. Jam pulang default
    **17:00** dan dapat diubah oleh admin.
-4. Buka **Peringkat** untuk melihat klasemen kehadiran; gunakan filter bulan atau
-   **Semua waktu**. Poin: hadir 10, tepat waktu +5, pulang lengkap +2.
+4. Buka **Peringkat** untuk melihat klasemen Kebun Magang; gunakan filter bulan
+   atau **Semua waktu**. Poin: hadir 10, tepat waktu +5, pulang lengkap +2,
+   catatan +1, durasi +1/jam (maks 5), streak +1 s.d. +5, datang awal +3/+2/+1.
 5. Buka **Kotak Saran** untuk membaca masukan peserta, membalas, mengubah status,
    atau menghapus saran.
 6. Buka **Panduan** kapan saja untuk langkah rinci dan pemecahan masalah.
@@ -354,8 +365,8 @@ token sebagai `p_token`; server memvalidasinya ke tabel `public.sessions`.
   - Hapus satu absensi, hapus seluruh absensi peserta, hapus akun.
   - Pengaturan nama aplikasi, batas telat, jam mulai pulang, zona waktu, kantor,
     radius, dan akurasi GPS maksimal.
-  - Peringkat kehadiran per bulan atau semua waktu dengan poin hadir, tepat waktu,
-    dan pulang lengkap.
+  - Peringkat Kebun Magang per bulan atau semua waktu dengan poin hadir, tepat
+    waktu, pulang lengkap, catatan, durasi kerja, streak, dan datang awal.
   - Kotak saran: ringkasan status, pencarian, filter, balasan admin, dan hapus.
   - Export Excel (Absensi dengan foto tertanam, Akun, Izin, Koreksi, Pengumuman,
     Pengaturan, Log).
@@ -366,11 +377,12 @@ token sebagai `p_token`; server memvalidasinya ke tabel `public.sessions`.
   - Kamera browser atau upload foto; foto dikompres ke JPEG.
   - Jika koneksi terputus saat absen, data disimpan di IndexedDB dan dikirim
     otomatis saat kembali online.
-  - Riwayat absensi pribadi di halaman terpisah.
+  - Riwayat absensi pribadi di halaman terpisah dengan pratinjau foto (lightbox).
   - Pengajuan izin, sakit, cuti, dan koreksi absensi dengan riwayat status.
   - Pengumuman dan agenda terbaru dari admin.
   - Insight kehadiran per bulan dan filter bulan pada riwayat.
-  - Peringkat kehadiran peserta dengan penanda posisi sendiri.
+  - Peringkat Kebun Magang dengan level, tahap tanaman, misi harian, dan penanda
+    posisi sendiri.
   - Kotak saran dengan kategori, status, dan balasan admin.
 - Menu **Akun** untuk semua pengguna:
   - Ringkasan akun: role, status, login terakhir, dan waktu password diubah.

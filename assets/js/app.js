@@ -30,6 +30,7 @@ import {
   dataUrlToBlob
 } from "./services/offline-queue.js";
 import { initTheme, toggleTheme, currentTheme } from "./lib/theme.js";
+import { bindPhotoLightbox } from "./lib/lightbox.js";
 
 const app = document.getElementById("app");
 const MOBILE_BREAKPOINT = 992;
@@ -671,6 +672,7 @@ function attachShellEvents() {
 
 async function init() {
   initTheme();
+  bindPhotoLightbox();
   registerServiceWorker();
   bindConnectivity();
   if (!configured) {
