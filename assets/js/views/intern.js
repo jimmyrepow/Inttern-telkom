@@ -20,6 +20,7 @@ import {
   isLocationReady
 } from "../services/location.js";
 import { renderGuide } from "./guide.js";
+import { applyFarmState } from "./farm.js";
 import { getGeofence, geofenceReason, formatDistance } from "../services/geofence.js";
 import {
   enqueueAttendance,
@@ -255,6 +256,88 @@ export function renderIntern() {
   return renderAbsenView(history);
 }
 
+function farmReminderData() {
+  const userId = state.user && state.user.id;
+  if (!state.farmProfile || state.farmLoadedFor !== userId) return null;
+  const profile = state.farmProfile;
+  const plots = (Array.isArray(state.farmPlots) ? state.farmPlots : []).filter((plot) => !plot.locked);
+  return {
+    level: Number(profile.level) || 1,
+    water: Number(profile.water) || 0,
+    fertilizer: Number(profile.fertilizer) || 0,
+    empty: plots.filter((plot) => !plot.seed_code).length,
+    ready: plots.filter((plot) => plot.status === "ready").length,
+    withered: plots.filter((plot) => plot.status === "withered" || plot.status === "dead").length,
+    stealRemaining: Number(profile.steal_remaining) || 0,
+    stealsUnlocked: Boolean(profile.steal_unlocked) || Number(profile.level) >= 3
+  };
+}
+
+function renderFarmReminder() {
+  const info = farmReminderData();
+  const note = !info
+    ? "Buka menu Kebun untuk melihat status plot, stok air/pupuk, dan tanaman yang siap panen."
+    : info.ready > 0
+      ? "Ada panen siap. Panen sekarang agar tidak layu."
+      : info.withered > 0
+        ? "Ada tanaman layu atau kering. Bersihkan lalu tanam ulang."
+        : info.empty > 0
+          ? "Masih ada plot kosong. Tanam bibit baru agar kebun tetap produktif."
+          : "Rawat tanaman yang sedang tumbuh agar panen tepat waktu.";
+
+  return `
+    <div class="card rounded-4 border-0 shadow-sm farm-reminder-card">
+      <div class="card-body p-3 p-md-4">
+        <div class="d-flex align-items-start gap-3">
+          <div class="farm-reminder-icon"><i class="bi bi-flower1" aria-hidden="true"></i></div>
+          <div class="flex-grow-1 min-w-0">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+              <div>
+                <h2 class="h6 fw-bold mb-1">Jangan lupa rawat kebun</h2>
+                <div class="small text-secondary">Absen masuk menambah air, absen pulang menambah pupuk. Sisihkan waktu untuk menanam dan merawat tanaman hari ini.</div>
+              </div>
+              <button class="btn btn-sm btn-success rounded-pill" type="button" data-nav="farm"><i class="bi bi-flower1 me-1"></i>Buka Kebun</button>
+            </div>
+            <div class="farm-reminder-tasks">
+              <span><i class="bi bi-seedling" aria-hidden="true"></i>Tanam bibit di plot kosong</span>
+              <span><i class="bi bi-droplet" aria-hidden="true"></i>Siram tanaman dengan air</span>
+              <span><i class="bi bi-basket" aria-hidden="true"></i>Beri pupuk: hasil +20%</span>
+              <span><i class="bi bi-basket-fill" aria-hidden="true"></i>Panen tanaman yang siap</span>
+              <span><i class="bi bi-incognito" aria-hidden="true"></i>Curi panen mulai Lv. 3</span>
+            </div>
+            ${info ? `
+              <div class="farm-reminder-chips">
+                <span><i class="bi bi-droplet-fill" aria-hidden="true"></i><strong>${info.water}</strong> air</span>
+                <span><i class="bi bi-basket-fill" aria-hidden="true"></i><strong>${info.fertilizer}</strong> pupuk</span>
+                <span><i class="bi bi-grid-3x3-gap" aria-hidden="true"></i><strong>${info.empty}</strong> plot kosong</span>
+                <span><i class="bi bi-basket" aria-hidden="true"></i><strong>${info.ready}</strong> siap panen</span>
+                ${info.stealsUnlocked ? `<span><i class="bi bi-incognito" aria-hidden="true"></i><strong>${info.stealRemaining}</strong> curi tersisa</span>` : ""}
+              </div>
+            ` : ""}
+            <div class="small text-secondary mt-2">${esc(note)}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function ensureFarmReminder() {
+  const userId = state.user && state.user.id;
+  if (!userId) return;
+  if (state.farmLoadedFor === userId || state.farmReminderTriedFor === userId) return;
+  state.farmReminderTriedFor = userId;
+  rpc("app_farm_state")
+    .then((result) => {
+      applyFarmState(result);
+      const box = document.getElementById("farm-reminder");
+      if (box) box.innerHTML = renderFarmReminder();
+    })
+    .catch((error) => {
+      if (isSessionExpired(error && error.message)) handleError(error);
+    });
+}
+
 function renderAbsenView(history) {
   const snapshot = attendanceSnapshot();
   const today = snapshot.today;
@@ -340,28 +423,31 @@ function renderAbsenView(history) {
         </div>
       </div>
       <div class="col-12 col-xl-5" id="riwayat-card">
-        <div class="card rounded-4 border-0 shadow-sm h-100">
-          <div class="card-body p-3 p-md-4">
-            <div class="d-flex justify-content-between align-items-center gap-2 mb-3">
-              <div>
-                <h2 class="h5 fw-bold mb-0">Riwayat terbaru</h2>
-                <div class="small text-secondary">${history.length} total absensi</div>
+        <div class="d-flex flex-column gap-3 h-100">
+          <div id="farm-reminder">${renderFarmReminder()}</div>
+          <div class="card rounded-4 border-0 shadow-sm flex-grow-1">
+            <div class="card-body p-3 p-md-4">
+              <div class="d-flex justify-content-between align-items-center gap-2 mb-3">
+                <div>
+                  <h2 class="h5 fw-bold mb-0">Riwayat terbaru</h2>
+                  <div class="small text-secondary">${history.length} total absensi</div>
+                </div>
+                <button class="btn btn-sm btn-outline-primary rounded-pill" type="button" data-nav="riwayat">Lihat semua</button>
               </div>
-              <button class="btn btn-sm btn-outline-primary rounded-pill" type="button" data-nav="riwayat">Lihat semua</button>
-            </div>
-            <div class="table-responsive">
-              <table class="table table-sm align-middle table-stack mb-0">
-                <thead>
-                  <tr>
-                    <th>Tgl</th>
-                    <th>Masuk</th>
-                    <th>Pulang</th>
-                    <th>Status</th>
-                    <th>Foto</th>
-                  </tr>
-                </thead>
-                <tbody>${renderInternHistory(recent)}</tbody>
-              </table>
+              <div class="table-responsive">
+                <table class="table table-sm align-middle table-stack mb-0">
+                  <thead>
+                    <tr>
+                      <th>Tgl</th>
+                      <th>Masuk</th>
+                      <th>Pulang</th>
+                      <th>Status</th>
+                      <th>Foto</th>
+                    </tr>
+                  </thead>
+                  <tbody>${renderInternHistory(recent)}</tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
@@ -509,6 +595,8 @@ export function attachInternEvents(context) {
   const rerender = context.rerender;
   if (state.checkoutTimer) clearInterval(state.checkoutTimer);
   state.checkoutTimer = null;
+
+  if (state.ui.tab === "absen") ensureFarmReminder();
 
   const checkInButton = document.getElementById("check-in-btn");
   const checkOutButton = document.getElementById("check-out-btn");

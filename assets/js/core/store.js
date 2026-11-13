@@ -71,6 +71,7 @@ export const state = {
   farmTargetsLoading: false,
   farmTargetsError: "",
   farmTargetsLoadedFor: "",
+  farmReminderTriedFor: "",
   ui: {
     tab: "attendance",
     search: "",
@@ -178,6 +179,7 @@ export function resetSessionState() {
   state.farmTargetsLoading = false;
   state.farmTargetsError = "";
   state.farmTargetsLoadedFor = "";
+  state.farmReminderTriedFor = "";
   state.ui.tab = "attendance";
   state.ui.search = "";
   state.ui.date = "";

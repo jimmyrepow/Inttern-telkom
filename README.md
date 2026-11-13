@@ -315,7 +315,8 @@ token sebagai `p_token`; server memvalidasinya ke tabel `public.sessions`.
    dinonaktifkan dan server juga menolak permintaan pulang lebih awal.
 4. Buka **Riwayat** untuk memeriksa catatan kehadiran milik sendiri dan melihat
    insight ketepatan waktu per bulan, atau **Peringkat** untuk membandingkan poin
-   dan level Kebun Magang dengan peserta lain.
+   dan level Kebun Magang dengan peserta lain. Halaman **Absen Hari Ini** juga
+   menampilkan pengingat kebun beserta stok air/pupuk dan tanaman siap panen.
 5. Buka **Kebun** untuk menanam bibit di plot, menyiram dengan air dari absen
    masuk, memberi pupuk dari absen pulang, lalu memanen saat siap. Panen memberi
    Poin Panen dan XP; bibit serta plot baru terbuka saat level naik. Mulai Lv. 3
@@ -395,6 +396,8 @@ token sebagai `p_token`; server memvalidasinya ke tabel `public.sessions`.
     Pengaturan, Log).
 - Dashboard intern:
   - Absen masuk dan pulang.
+  - Pengingat kebun di halaman absen: tanam, siram, pupuk, panen, stok air/pupuk,
+    dan jumlah plot yang perlu dirawat.
   - Absen pulang dikunci sebelum jam yang ditetapkan dan dicek kembali oleh database.
   - Ambil GPS dan tampilkan akurasi.
   - Kamera browser atau upload foto; foto dikompres ke JPEG.

@@ -4061,3 +4061,89 @@ body.sidebar-locked {
   background: #0b1220;
   border-color: #243044;
 }
+
+.farm-reminder-card {
+  background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 68%);
+  box-shadow: 0 0.125rem 0.35rem rgba(15, 23, 42, 0.06), inset 0 0 0 1px #bbf7d0;
+}
+
+.farm-reminder-icon {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.8rem;
+  background: #dcfce7;
+  color: #15803d;
+  font-size: 1.25rem;
+}
+
+.farm-reminder-tasks {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.35rem 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.farm-reminder-tasks span {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: #3f6212;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.farm-reminder-tasks i {
+  color: #16a34a;
+}
+
+.farm-reminder-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.75rem;
+}
+
+.farm-reminder-chips span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.22rem 0.5rem;
+  border-radius: 999px;
+  background: #f0fdf4;
+  color: #166534;
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
+.farm-reminder-chips i {
+  color: #16a34a;
+}
+
+@media (max-width: 575.98px) {
+  .farm-reminder-tasks {
+    grid-template-columns: 1fr;
+  }
+}
+
+[data-bs-theme="dark"] .farm-reminder-card {
+  background: linear-gradient(135deg, #0b1f14 0%, #0f172a 70%);
+  box-shadow: 0 0.125rem 0.35rem rgba(0, 0, 0, 0.3), inset 0 0 0 1px #14532d;
+}
+
+[data-bs-theme="dark"] .farm-reminder-icon {
+  background: #052e16;
+  color: #86efac;
+}
+
+[data-bs-theme="dark"] .farm-reminder-tasks span {
+  color: #bbf7d0;
+}
+
+[data-bs-theme="dark"] .farm-reminder-chips span {
+  background: #052e16;
+  color: #bbf7d0;
+}

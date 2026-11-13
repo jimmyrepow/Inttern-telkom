@@ -11,7 +11,7 @@ function safeColor(value) {
   return /^#[0-9a-f]{6}$/i.test(color) ? color : "#10b981";
 }
 
-function applyFarmState(data) {
+export function applyFarmState(data) {
   if (!data || typeof data !== "object") return;
   if (data.profile) state.farmProfile = data.profile;
   if (Array.isArray(data.seeds)) state.farmSeeds = data.seeds;
