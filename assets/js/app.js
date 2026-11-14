@@ -561,6 +561,12 @@ function updateConnectivityUi() {
 }
 
 async function refreshQueueCount() {
+  // Admin tidak punya antrean absensi - mereka bukan peserta
+  if (state.user && state.user.role && state.user.role.toLowerCase() === "admin") {
+    state.offlineQueueCount = 0;
+    updateConnectivityUi();
+    return;
+  }
   if (!state.user || !queueSupported()) {
     state.offlineQueueCount = 0;
     updateConnectivityUi();
@@ -575,6 +581,12 @@ async function refreshQueueCount() {
 }
 
 async function flushOfflineAttendance() {
+  // Admin tidak punya antrean absensi - mereka bukan peserta
+  if (state.user && state.user.role && state.user.role.toLowerCase() === "admin") {
+    state.offlineQueueCount = 0;
+    updateConnectivityUi();
+    return;
+  }
   if (
     !state.token ||
     !state.user ||

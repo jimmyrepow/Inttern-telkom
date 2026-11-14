@@ -693,6 +693,12 @@ async function handleAttendanceSubmit(type, button, refresh) {
   const user = state.user;
   if (!user || state.attendanceSubmitting) return;
 
+  // Admin tidak boleh absensi - mereka bukan peserta
+  if (user.role && user.role.toLowerCase() === "admin") {
+    toast("Akun admin tidak dapat melakukan absensi. Admin bukan peserta magang.", "danger");
+    return;
+  }
+
   const snapshot = attendanceSnapshot();
 
   if (!snapshot.isWorkday) {
