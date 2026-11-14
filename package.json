@@ -11,7 +11,8 @@
     "migrate:status": "node scripts/migrate.js --status",
     "seed": "node scripts/seed.js",
     "doctor": "node scripts/doctor.js",
-    "setup": "node scripts/migrate.js && node scripts/seed.js && node scripts/doctor.js"
+    "setup": "node scripts/migrate.js && node scripts/seed.js && node scripts/doctor.js",
+    "admin:clear-attendance": "node scripts/clear-admin-attendance.js"
   },
   "dependencies": {
     "dotenv": "^16.4.7",

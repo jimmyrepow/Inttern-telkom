@@ -62,6 +62,17 @@ export function renderGuide(role) {
           </dl>
           <div class="guide-note"><i class="bi bi-lightbulb"></i><span>Perubahan pengaturan tersimpan di server. Batas absen masuk, batas pulang, radius kantor, dan akurasi GPS diperiksa langsung oleh server saat absensi.</span></div>
         </section>
+
+        <section class="guide-card">
+          <h3><span class="guide-icon"><i class="bi bi-person-badge"></i></span> Catatan tentang role Admin</h3>
+          <div class="guide-note"><i class="bi bi-info-circle"></i><span>Admin adalah pembina/pendamping peserta magang, bukan peserta itu sendiri. Karena itu:</span></div>
+          <ul class="guide-list">
+            <li><span><strong>Admin tidak absensi</strong> &mdash; sistem tidak menyediakan fitur absensi untuk akun admin.</span></li>
+            <li><span><strong>Rekap peserta hanya berisi data peserta</strong> &mdash; data absensi admin tidak tercampur dengan rekap peserta magang.</span></li>
+            <li><span><strong>Statistik kehadiran hanya menghitung peserta</strong> &mdash; jumlah hadir, tepat waktu, telat, dan tidak hadir hanya dihitung dari absensi peserta magang.</span></li>
+            <li><span><strong>Leaderboard hanya untuk peserta</strong> &mdash; admin tidak memiliki posisi di peringkat peserta magang.</span></li>
+          </ul>
+        </section>
       </div>
 
       <section class="guide-card">
@@ -165,10 +176,40 @@ export function renderGuide(role) {
         <div class="guide-note"><i class="bi bi-info-circle"></i><span>Lupa password lama? Hubungi admin untuk reset password. Setelah direset, Anda bisa menggantinya sendiri lewat menu Akun.</span></div>
       </section>
     `
-    }
+    }      <section class="guide-card">
+        <h3><span class="guide-icon"><i class="bi bi-shield-gear"></i></span> Perbedaan role Admin dan Peserta</h3>
+        <div class="guide-two-col">
+          <div>
+            <h4>Role Admin (Pembina)</h4>
+            <p>Admin adalah pembina/pendamping magang, <strong>bukan peserta</strong>. Akun admin:</p>
+            <ul class="guide-list">
+              <li><i class="bi bi-check-lg"></i><span><strong>Tidak bisa absensi</strong> &mdash; tombol absen tidak tersedia untuk admin.</span></li>
+              <li><i class="bi bi-check-lg"></i><span><strong>Tidak muncul di rekap peserta</strong> &mdash; data absensi admin tidak tercampur dengan data peserta.</span></li>
+              <li><i class="bi bi-check-lg"></i><span><strong>Tidak muncul di leaderboard</strong> &mdash; peringkat hanya untuk peserta magang.</span></li>
+              <li><i class="bi bi-check-lg"></i><span><strong>Bisa kelola peserta</strong> &mdash; lihat, tambah, edit, nonaktifkan akun peserta.</span></li>
+              <li><i class="bi bi-check-lg"></i><span><strong>Bisa koreksi absensi</strong> &mdash; edit status tepat waktu/telat, jam masuk/pulang.</span></li>
+              <li><i class="bi bi-check-lg"></i><span><strong>Bisa export Excel</strong> &mdash; unduh rekap absensi lengkap.</span></li>
+              <li><i class="bi bi-check-lg"></i><span><strong>Bisa atur pengaturan</strong> &mdash; jam masuk/pulang, radius GPS, zona waktu.</span></li>
+            </ul>
+          </div>
+          <div>
+            <h4>Role Peserta Magang (Intern)</h4>
+            <p>Peserta magang adalah peserta yang wajib absensi setiap hari kerja. Akun peserta:</p>
+            <ul class="guide-list">
+              <li><i class="bi bi-check-lg"></i><span><strong>Wajib absensi</strong> &mdash; absen masuk dan pulang setiap hari Senin-Jumat.</span></li>
+              <li><i class="bi bi-check-lg"></i><span><strong>GPS dan foto wajib</strong> &mdash; absensi hanya bisa dilakukan di kantor dengan foto selfie.</span></li>
+              <li><i class="bi bi-check-lg"></i><span><strong>Lihat riwayat pribadi</strong> &mdash; hanya melihat absensi sendiri.</span></li>
+              <li><i class="bi bi-check-lg"></i><span><strong>Lihat leaderboard</strong> &mdash; peringkat kehadiran peserta magang.</span></li>
+              <li><i class="bi bi-check-lg"></i><span><strong>Kebun Magang</strong> &mdash; fitur tambahan berbasis kehadiran.</span></li>
+              <li><i class="bi bi-check-lg"></i><span><strong>Bisa ajukan izin/koreksi</strong> &mdash; absen terlambat, izin, sakit, cuti.</span></li>
+            </ul>
+            <div class="guide-note"><i class="bi bi-info-circle"></i><span>Jika Anda admin tapi ingin mencoba fitur absensi, minta admin lain membuatkan akun peserta khusus untuk testing.</span></div>
+          </div>
+        </div>
+      </section>
 
-    <section class="guide-card">
-      <h3><span class="guide-icon"><i class="bi bi-question-circle"></i></span> Pertanyaan yang sering muncul</h3>
+      <section class="guide-card">
+        <h3><span class="guide-icon"><i class="bi bi-question-circle"></i></span> Pertanyaan yang sering muncul</h3>
       <div class="accordion guide-faq" id="guide-faq">
         <div class="accordion-item">
           <h4 class="accordion-header">
