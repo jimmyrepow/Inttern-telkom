@@ -16,7 +16,8 @@ export function renderAdminDashboard() {
     onTime: 0,
     late: 0,
     absent: 0,
-    today: getTodayDate()
+    today: getTodayDate(),
+    isWorkday: true
   };
   return `
     <div class="stats-grid mb-4">
@@ -24,7 +25,7 @@ export function renderAdminDashboard() {
       ${statCard("Hadir hari ini", stats.totalAttendanceToday, stats.today)}
       ${statCard("Tepat waktu", stats.onTime)}
       ${statCard("Telat", stats.late)}
-      ${statCard("Belum absen", stats.absent)}
+      ${statCard("Belum absen", stats.isWorkday === false ? "Libur" : stats.absent)}
     </div>
     ${renderAdminInsight(stats)}
     ${renderAdminAttendanceTab()}
@@ -32,6 +33,21 @@ export function renderAdminDashboard() {
 }
 
 function renderAdminInsight(stats) {
+  if (stats.isWorkday === false) {
+    return `
+      <div class="card rounded-4 border-0 shadow-sm mb-4">
+        <div class="card-body p-3 p-md-4">
+          <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+            <div>
+              <h2 class="h5 fw-bold mb-1">Akhir pekan</h2>
+              <div class="small text-secondary">Tanggal ${esc(stats.today || getTodayDate())} adalah hari libur. Tidak ada absensi pada Sabtu/Minggu; statistik kehadiran dilanjutkan Senin.</div>
+            </div>
+            <span class="badge bg-secondary rounded-pill px-3 py-2">Libur</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
   const total = Number(stats.totalInterns) || 0;
   const present = Number(stats.totalAttendanceToday) || 0;
   const onTime = Number(stats.onTime) || 0;

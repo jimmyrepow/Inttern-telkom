@@ -102,6 +102,7 @@ tidak dipakai.
       0018_farm_system.sql
       0019_farm_leaderboard.sql
       0020_farm_steal.sql
+      0021_weekday_only_attendance.sql
     ```
 
 ### Aturan modularisasi
@@ -209,6 +210,11 @@ Migrasi `0020_farm_steal.sql` menambahkan mekanik curi panen: daftar target,
 riwayat pencurian, pengurangan hasil panen pemilik, serta poin curian pada
 peringkat. Fitur terbuka di Lv. 3, maksimal 3 kali/hari, 1 kali per peserta, dan
 1 kali per plot. Poin curian dibatasi maksimal 5 poin (25% hasil panen).
+Migrasi `0021_weekday_only_attendance.sql` menjadikan absensi hanya untuk hari
+kerja Senin-Jumat: absen masuk/pulang ditolak pada Sabtu/Minggu, statistik
+"hari ini" dan "belum absen" tidak menghitung akhir pekan, dan absensi akhir
+pekan tidak dihitung pada leaderboard/streak. Data akhir pekan lama tetap
+tersimpan.
 Jika koneksi dari komputer tidak tersedia, buka Supabase Dashboard > SQL Editor,
 lalu jalankan isi file migrasi terbaru yang belum diterapkan secara berurutan.
 Setelah itu muat ulang aplikasi agar RPC baru terdeteksi.

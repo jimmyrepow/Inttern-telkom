@@ -1,6 +1,6 @@
 import { state } from "../core/store.js";
 import { esc } from "../lib/dom.js";
-import { getTodayDate, formatMonth, shortTime } from "../lib/format.js";
+import { getTodayDate, formatMonth, shortTime, isWeekendDate } from "../lib/format.js";
 import { statCard } from "../lib/render.js";
 import { renderBarChart, renderRatioBar } from "../lib/charts.js";
 import { exportPdfReport } from "../services/pdf.js";
@@ -12,7 +12,9 @@ function roleKey() {
 }
 
 function scopedAttendance() {
-  const rows = Array.isArray(state.attendance) ? state.attendance : [];
+  const rows = (Array.isArray(state.attendance) ? state.attendance : []).filter(
+    (row) => !isWeekendDate(row.date)
+  );
   if (roleKey() === "admin") return rows;
   const userId = String(state.user && state.user.id);
   return rows.filter((row) => String(row.user_id) === userId);
@@ -62,8 +64,15 @@ function leaveDaysInMonth(key) {
     const from = String(leave.start_date || "") > start ? String(leave.start_date) : start;
     const to = String(leave.end_date || "") < end ? String(leave.end_date) : end;
     if (!from || !to || from > to) return sum;
-    const diff = Math.round((new Date(to) - new Date(from)) / 86400000) + 1;
-    return sum + Math.max(0, diff);
+    let days = 0;
+    const cursor = new Date(from + "T00:00:00");
+    const stop = new Date(to + "T00:00:00");
+    while (cursor <= stop) {
+      const day = cursor.getDay();
+      if (day !== 0 && day !== 6) days += 1;
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    return sum + days;
   }, 0);
 }
 
@@ -81,6 +90,8 @@ function dailyChart(key) {
   const total = daysInMonth(key);
   const items = [];
   for (let day = 1; day <= total; day += 1) {
+    const dateKey = key + "-" + String(day).padStart(2, "0");
+    if (isWeekendDate(dateKey)) continue;
     const entry = byDay[day] || { total: 0, late: 0 };
     items.push({
       label: String(day),

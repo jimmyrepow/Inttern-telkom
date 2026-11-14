@@ -2,7 +2,7 @@ import { state } from "../core/store.js";
 import { rpc, handleError, sb } from "../core/api.js";
 import { PHOTO_BUCKET } from "../core/config.js";
 import { esc, toast, withBusy, confirmDialog } from "../lib/dom.js";
-import { getTodayDate, shortTime, statusBadge, formatMonth } from "../lib/format.js";
+import { getTodayDate, shortTime, statusBadge, formatMonth, isWorkdayDate } from "../lib/format.js";
 import { statCard, renderPhoto } from "../lib/render.js";
 import {
   renderSelfiePreview,
@@ -82,6 +82,7 @@ function attendanceSnapshot() {
 
   return {
     today,
+    isWorkday: isWorkdayDate(today),
     existing,
     hasIn: Boolean(existing && existing.check_in),
     hasOut: Boolean(existing && existing.check_out),
@@ -95,6 +96,12 @@ function attendanceSnapshot() {
 }
 
 function attendanceHint(snapshot) {
+  if (!snapshot.isWorkday) {
+    return {
+      text: "Hari ini akhir pekan. Absensi hanya tersedia Senin-Jumat.",
+      tone: "muted"
+    };
+  }
   if (snapshot.hasOut) {
     return { text: "Absensi hari ini sudah lengkap. Terima kasih.", tone: "success" };
   }
@@ -162,6 +169,7 @@ function attendanceHint(snapshot) {
 }
 
 function checkInLabel(snapshot) {
+  if (!snapshot.isWorkday) return "Akhir Pekan";
   if (snapshot.hasIn) return "Sudah Absen Masuk";
   if (state.attendanceSubmitting) return "Menyimpan...";
   if (!isLocationReady()) {
@@ -174,6 +182,7 @@ function checkInLabel(snapshot) {
 }
 
 function checkOutLabel(snapshot) {
+  if (!snapshot.isWorkday) return "Akhir Pekan";
   if (snapshot.hasOut) return "Sudah Absen Pulang";
   if (state.attendanceSubmitting) return "Menyimpan...";
   if (!snapshot.hasIn) return "Absen Pulang";
@@ -209,6 +218,7 @@ function updateAttendanceAvailability() {
 
   if (checkInButton) {
     checkInButton.disabled =
+      !snapshot.isWorkday ||
       snapshot.hasIn ||
       !geofenceAllowsAttendance() ||
       !photoReady() ||
@@ -217,6 +227,7 @@ function updateAttendanceAvailability() {
   }
   if (checkOutButton) {
     checkOutButton.disabled =
+      !snapshot.isWorkday ||
       snapshot.hasOut ||
       !snapshot.hasIn ||
       !snapshot.checkoutReady ||
@@ -341,6 +352,7 @@ function ensureFarmReminder() {
 function renderAbsenView(history) {
   const snapshot = attendanceSnapshot();
   const today = snapshot.today;
+  const isWorkday = snapshot.isWorkday;
   const todayRow = snapshot.existing;
   const hasIn = snapshot.hasIn;
   const hasOut = snapshot.hasOut;
@@ -374,8 +386,8 @@ function renderAbsenView(history) {
 
   return `
     <div class="stats-grid mb-4">
-      ${statCard("Status hari ini", hasIn ? (hasOut ? "Selesai" : "Sudah masuk") : "Belum absen", today)}
-      ${statCard("Keterlambatan", todayRow ? (todayRow.status === "late" ? "Telat" : "Tepat waktu") : "-")}
+      ${statCard("Status hari ini", !isWorkday ? "Libur" : hasIn ? (hasOut ? "Selesai" : "Sudah masuk") : "Belum absen", today)}
+      ${statCard("Keterlambatan", !isWorkday ? "Libur" : todayRow ? (todayRow.status === "late" ? "Telat" : "Tepat waktu") : "-")}
       ${statCard("GPS", locationLabel, "", "gps-stat")}
       ${statCard("Selfie", photoReady() ? "Siap" : "Kosong", "", "selfie-stat")}
     </div>
@@ -391,6 +403,7 @@ function renderAbsenView(history) {
               <span class="badge badge-soft rounded-pill px-3 py-2">${esc(today)}</span>
             </div>
             ${hasIn && hasOut ? '<div class="alert alert-success small">Absensi hari ini sudah lengkap. Terima kasih.</div>' : ""}
+            ${!isWorkday ? '<div class="alert alert-warning small">Hari ini akhir pekan. Absensi hanya tersedia Senin-Jumat.</div>' : ""}
             <div class="location-box mb-3">
               <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
                 <strong class="small">Lokasi GPS</strong>
@@ -414,8 +427,8 @@ function renderAbsenView(history) {
               <textarea id="attendance-note" class="form-control rounded-3" rows="2" maxlength="500" placeholder="Contoh: WFO / izin / keterangan tambahan">${esc(state.note)}</textarea>
             </div>
             <div class="d-flex flex-wrap gap-2 mt-3">
-              <button class="btn btn-primary flex-fill rounded-3" id="check-in-btn" type="button" aria-describedby="attendance-ready-hint" ${hasIn || !geofenceAllowsAttendance() || !photoReady() || state.attendanceSubmitting ? "disabled" : ""}>${esc(checkInLabel(snapshot))}</button>
-              <button class="btn btn-danger flex-fill rounded-3" id="check-out-btn" type="button" aria-describedby="attendance-ready-hint" ${hasOut || !hasIn || !snapshot.checkoutReady || !geofenceAllowsAttendance() || !photoReady() || state.attendanceSubmitting ? "disabled" : ""}>${esc(checkOutLabel(snapshot))}</button>
+              <button class="btn btn-primary flex-fill rounded-3" id="check-in-btn" type="button" aria-describedby="attendance-ready-hint" ${!isWorkday || hasIn || !geofenceAllowsAttendance() || !photoReady() || state.attendanceSubmitting ? "disabled" : ""}>${esc(checkInLabel(snapshot))}</button>
+              <button class="btn btn-danger flex-fill rounded-3" id="check-out-btn" type="button" aria-describedby="attendance-ready-hint" ${!isWorkday || hasOut || !hasIn || !snapshot.checkoutReady || !geofenceAllowsAttendance() || !photoReady() || state.attendanceSubmitting ? "disabled" : ""}>${esc(checkOutLabel(snapshot))}</button>
             </div>
             ${renderAttendanceHint(snapshot)}
             ${todayRow ? '<div class="small text-secondary mt-3">Absen hari ini: masuk ' + esc(shortTime(todayRow.check_in)) + " &middot; pulang " + esc(shortTime(todayRow.check_out)) + " &middot; " + statusBadge(todayRow.status, hasIn) + "</div>" : ""}
@@ -682,6 +695,10 @@ async function handleAttendanceSubmit(type, button, refresh) {
 
   const snapshot = attendanceSnapshot();
 
+  if (!snapshot.isWorkday) {
+    toast("Hari ini akhir pekan. Absensi hanya tersedia Senin-Jumat.", "warning");
+    return;
+  }
   if (type === "check-in" && snapshot.hasIn) {
     toast("Anda sudah absen masuk hari ini.", "danger");
     return;

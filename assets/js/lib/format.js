@@ -14,6 +14,17 @@ export function getTodayDate() {
   }
 }
 
+export function isWeekendDate(value) {
+  const match = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!match) return false;
+  const day = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3])).getDay();
+  return day === 0 || day === 6;
+}
+
+export function isWorkdayDate(value) {
+  return !isWeekendDate(value);
+}
+
 export function formatDateTime(value) {
   if (!value) return "-";
   try {

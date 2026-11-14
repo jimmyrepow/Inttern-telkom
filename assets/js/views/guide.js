@@ -54,6 +54,7 @@ export function renderGuide(role) {
           <dl class="guide-settings">
             <dt>Batas absen masuk</dt><dd>Jam batas tepat waktu. Absen setelah jam ini ditandai telat. Contoh <code>08:15</code>.</dd>
             <dt>Jam mulai pulang</dt><dd>Absen pulang baru aktif pada atau setelah jam yang ditetapkan. Default <code>17:00</code>, mengikuti zona waktu aplikasi.</dd>
+            <dt>Hari absensi</dt><dd>Absensi hanya dibuka Senin-Jumat. Sabtu dan Minggu dianggap libur sehingga tidak dihitung sebagai keterlambatan atau ketidakhadiran.</dd>
             <dt>Zona waktu</dt><dd>Gunakan format <code>Asia/Jakarta</code>, <code>Asia/Makassar</code>, atau <code>Asia/Jayapura</code>.</dd>
             <dt>Koordinat kantor</dt><dd>Isi latitude dan longitude berpasangan. Bisa disalin dari Google Maps; periksa kembali sebelum menyimpan.</dd>
             <dt>Radius absensi</dt><dd>Isi radius dalam meter. Server menolak absensi jika posisi pengguna berada di luar radius kantor. Nilai 0 menonaktifkan geofence.</dd>
@@ -111,6 +112,7 @@ export function renderGuide(role) {
           <li><span>3</span><div><strong>Isi catatan (opsional)</strong><p>Contoh: WFO, izin, atau keterangan tambahan. Maksimal 500 karakter.</p></div></li>
           <li><span>4</span><div><strong>Tekan Absen Masuk</strong><p>Setelah berhasil, tombol berubah menjadi <em>Sudah Absen Masuk</em>. Tombol <em>Absen Pulang</em> aktif mulai jam pulang yang ditentukan admin dan server menolak absen lebih awal atau di luar radius.</p></div></li>
         </ol>
+        <div class="guide-note"><i class="bi bi-calendar-week"></i><span>Absensi hanya tersedia Senin-Jumat. Pada Sabtu dan Minggu tombol absen dinonaktifkan karena dianggap hari libur.</span></div>
         <div class="guide-note"><i class="bi bi-camera"></i><span>Jika izin kamera tidak muncul, buka lewat <code>http://localhost</code> atau HTTPS, lalu izinkan kamera lewat ikon gembok di address bar.</span></div>
       </section>
 
