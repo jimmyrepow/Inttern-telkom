@@ -1,3 +1,5 @@
+import { DEV_WHATSAPP_URL, DEV_WHATSAPP_DISPLAY } from "../core/config.js";
+
 export function renderGuide(role) {
   const isAdmin = String(role || "").toLowerCase() === "admin";
   return `
@@ -262,6 +264,10 @@ export function renderGuide(role) {
       </div>
     </section>
 
-    <p class="guide-footer">Butuh bantuan lain? Hubungi admin TELKOM AKSES dan sertakan tangkapan layar pesan kesalahan.</p>
+    <p class="guide-footer">
+      Butuh bantuan lain? Hubungi admin TELKOM AKSES untuk masalah akun, atau
+      <a href="${DEV_WHATSAPP_URL}" target="_blank" rel="noopener noreferrer">chat dev di WhatsApp ${DEV_WHATSAPP_DISPLAY}</a>
+      bila menemukan bug/error dan sertakan tangkapan layar pesan kesalahan.
+    </p>
   `;
 }

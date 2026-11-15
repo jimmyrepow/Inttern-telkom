@@ -2,7 +2,7 @@ import { state } from "../core/store.js";
 import { rpc, authErrorMessage } from "../core/api.js";
 import { saveToken } from "../core/session.js";
 import { esc, withBusy } from "../lib/dom.js";
-import { APP_CREDITS } from "../core/config.js";
+import { APP_CREDITS, DEV_WHATSAPP_URL, DEV_WHATSAPP_DISPLAY } from "../core/config.js";
 
 export function renderLogin(message, onSuccess) {
   state.page = "login";
@@ -36,6 +36,11 @@ export function renderLogin(message, onSuccess) {
           </form>
           <div class="text-center small text-secondary mt-3">
             Lupa password? Hubungi admin untuk melakukan reset password.
+          </div>
+          <div class="text-center small mt-2">
+            <a class="auth-help-link" href="${DEV_WHATSAPP_URL}" target="_blank" rel="noopener noreferrer">
+              <i class="bi bi-whatsapp"></i> Ada bug/error? Hubungi dev ${DEV_WHATSAPP_DISPLAY}
+            </a>
           </div>
           <div class="auth-features">
             <div class="auth-feature"><span class="dot"></span><span>Absen masuk dan pulang dengan GPS otomatis dan selfie wajib.</span></div>

@@ -2227,6 +2227,36 @@ body.sidebar-locked {
   font-weight: 600;
 }
 
+.footer-contact {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: #128c7e;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.footer-contact:hover,
+.footer-contact:focus-visible {
+  color: #0b6b60;
+  text-decoration: underline;
+}
+
+.auth-help-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: #128c7e;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.auth-help-link:hover,
+.auth-help-link:focus-visible {
+  color: #0b6b60;
+  text-decoration: underline;
+}
+
 .auth-credit {
   display: inline-flex;
   align-items: center;

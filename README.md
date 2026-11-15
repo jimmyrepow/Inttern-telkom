@@ -215,6 +215,13 @@ kerja Senin-Jumat: absen masuk/pulang ditolak pada Sabtu/Minggu, statistik
 "hari ini" dan "belum absen" tidak menghitung akhir pekan, dan absensi akhir
 pekan tidak dihitung pada leaderboard/streak. Data akhir pekan lama tetap
 tersimpan.
+
+Migrasi `0022_admin_not_in_attendance.sql` memisahkan role admin dari data
+peserta magang: admin tidak bisa absensi (check-in/check-out ditolak), data
+absensi admin tidak muncul di rekap peserta, statistik kehadiran hanya
+menghitung peserta, dan leaderboard hanya untuk peserta magang. Admin tetap
+bisa melihat semua akun (termasuk admin lain) untuk keperluan manajemen,
+approved/absensi peserta, dan export Excel.
 Jika koneksi dari komputer tidak tersedia, buka Supabase Dashboard > SQL Editor,
 lalu jalankan isi file migrasi terbaru yang belum diterapkan secara berurutan.
 Setelah itu muat ulang aplikasi agar RPC baru terdeteksi.
@@ -337,6 +344,10 @@ token sebagai `p_token`; server memvalidasinya ke tabel `public.sessions`.
 
 ### Panduan singkat admin
 
+Admin adalah pembina/pendamping peserta magang, **bukan peserta itu sendiri**.
+Oleh karena itu admin **tidak memiliki fitur absensi** dan tidak muncul di rekap
+peserta, statistik kehadiran, maupun leaderboard.
+
 1. Buka **Peserta** lalu tekan **Tambah peserta** untuk membuka modal akun.
    Gunakan pencarian, filter role, dan pagination untuk menemukan akun; tombol
    **Edit** membuka modal yang sama untuk memperbarui data.
@@ -345,7 +356,7 @@ token sebagai `p_token`; server memvalidasinya ke tabel `public.sessions`.
 3. Buka **Pengaturan** untuk mengatur batas telat masuk, jam mulai absen pulang,
    zona waktu, lokasi/radius kantor, dan akurasi GPS maksimal. Jam pulang default
    **17:00** dan dapat diubah oleh admin.
-4. Buka **Peringkat** untuk melihat klasemen Kebun Magang; gunakan filter bulan
+4. Buka **Peringkat** untuk melihat klasemen Kebun Maggan; gunakan filter bulan
    atau **Semua waktu**. Poin: hadir 10, tepat waktu +5, pulang lengkap +2,
    catatan +1, durasi +1/jam (maks 5), streak +1 s.d. +5, datang awal +3/+2/+1.
    Poin panen dan poin curian peserta menjadi bonus peringkat maksimal sebesar
@@ -461,7 +472,57 @@ token sebagai `p_token`; server memvalidasinya ke tabel `public.sessions`.
   terekspos di chat, screenshot, atau repositori.
 - Tidak perlu mengaktifkan provider Auth apa pun di Supabase Dashboard.
 
-## 12. Troubleshooting
+## 12. Peran Admin vs Peserta
+
+Aplikasi ini memisahkan role **admin** (pembina/pendamping) dan **peserta magang**
+(intern) secara ketat:
+
+### Admin (Pembina)
+
+- **Tidak bisa absensi**: tombol check-in/check-out tidak tersedia. Jika admin
+  mencoba absensi (misalnya via API atau offline queue), sistem menolak dengan
+  pesan "Akun admin tidak dapat melakukan absensi. Admin bukan peserta magang."
+- **Tidak muncul di rekap peserta**: data absensi admin tidak tercampur dengan
+  data absensi peserta magang di menu Absensi admin.
+- **Tidak muncul di statistik kehadiran**: jumlah hadir, tepat waktu, telat,
+  dan belum absen hanya dihitung dari absensi peserta magang.
+- **Tidak muncul di leaderboard**: peringkat hanya untuk peserta magang.
+- **Bisa kelola peserta**: melihat semua akun, menambah/edit/nonaktifkan peserta,
+  reset password.
+- **Bisa koreksi absensi**: edit status tepat waktu/telat, jam masuk/pulang.
+- **Bisa export Excel**: unduh rekap absensi lengkap dengan foto.
+- **Bisa atur pengaturan**: jam masuk/pulang, radius GPS, zona waktu.
+- **Bisa melihat log audit**: riwayat aktivitas sistem.
+
+### Peserta Magang (Intern)
+
+- **Wajib absensi** setiap hari kerja (Senin-Jumat) dengan GPS dan foto.
+- **Hanya melihat absensi sendiri** di riwayat dan rekap pribadi.
+- **Terlihat di leaderboard** dan rekap peserta yang dikelola admin.
+- **Bisa mengajukan izin/sakit/cuti/koreksi** absensi.
+- **Punya fitur Kebun Magang** berbasis kehadiran.
+
+### Pembeda di Backend
+
+- Fungsi `app_check_in` dan `app_check_out` mengecek `v_user.role = 'admin'`
+  dan menolak absensi admin.
+- Fungsi `app_bootstrap` (untuk admin) memfilter attendance: hanya data
+  `u.role = 'intern'` yang ditampilkan di rekap.
+- Fungsi `app_bootstrap` stats hanya menghitung absensi peserta.
+- Fungsi `app_leaderboard` sudah memfilter `where u.role = 'intern'`.
+- RPC admin (`admin_update_attendance`, `app_delete_attendance`) memakai
+  `require_admin()` untuk memastikan hanya admin yang bisa melakukan aksi.
+- Frontend juga memiliki defense-in-depth: `refreshQueueCount()`,
+  `flushOfflineAttendance()`, dan `handleAttendanceSubmit()` mem-bypass
+  atau menolak aksi absensi dari admin.
+
+### Jika Admin Ingin Test Fitur Absensi
+
+Buat akun peserta khusus (misalnya "test") melalui menu Peserta, lalu login
+dengan akun tersebut untuk mencoba fitur absensi. Jangan menggunakan akun admin
+untuk keperluan testing absensi.
+
+## 13. Troubleshooting
 
 ### `getaddrinfo ENOTFOUND db.<ref>.supabase.co`
 
@@ -504,7 +565,7 @@ adalah `5500`.
 - Buka konsol browser; kesalahan impor modul akan terlihat di sana.
 - Pastikan `assets/js/config.js` berisi URL dan publishable key yang benar.
 
-## 13. Deploy frontend
+## 14. Deploy frontend
 
 Konfigurasi [Vercel](./vercel.json) menggunakan preset **Other**, menjalankan
 `npm run build`, lalu menerbitkan folder `dist/`. Build hanya menyalin:
