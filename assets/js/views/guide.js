@@ -1,4 +1,4 @@
-import { DEV_WHATSAPP_URL, DEV_WHATSAPP_DISPLAY } from "../core/config.js";
+import { DEV_WHATSAPP_URL } from "../core/config.js";
 
 export function renderGuide(role) {
   const isAdmin = String(role || "").toLowerCase() === "admin";
@@ -145,6 +145,13 @@ export function renderGuide(role) {
         </section>
 
         <section class="guide-card">
+          <h3><span class="guide-icon"><i class="bi bi-patch-question"></i></span> Kuis Telkom Akses</h3>
+          <p>Menu <strong>Kuis</strong> berisi bank 100 soal seputar dasar telekomunikasi, fiber optic, FTTH, OSP, ISP, perangkat jaringan, maintenance, assurance, pengukuran redaman, K3, dan studi kasus lapangan.</p>
+          <p>Setiap sesi berisi <strong>10 soal acak</strong> dengan durasi <strong>15 menit</strong>. Jawaban benar bernilai <strong>+10 poin</strong>, dan sesi sempurna 10 benar mendapat bonus <strong>+20 poin</strong>. Maksimal <strong>3 sesi per hari</strong>.</p>
+          <p class="mb-0">Soal yang belum pernah keluar diprioritaskan agar tidak mengulang soal yang sama. Jawaban yang sudah dikirim tidak dapat diubah, dan sesi otomatis ditutup saat waktu habis. Poin serta peringkat kuis dihitung otomatis oleh server.</p>
+        </section>
+
+        <section class="guide-card">
           <h3><span class="guide-icon"><i class="bi bi-chat-square-text"></i></span> Kotak saran</h3>
           <p>Menu <strong>Kotak Saran</strong> menyediakan formulir masukan dengan kategori Umum, Absensi, Tampilan, Fitur, Bug, atau Lainnya. Isi saran 5–1500 karakter lalu konfirmasi pengiriman.</p>
           <p class="mb-0">Saran yang sudah dikirim tampil di daftar beserta status dan balasan admin. Tekan <em>Muat ulang</em> untuk mengambil pembaruan terbaru.</p>
@@ -203,6 +210,7 @@ export function renderGuide(role) {
               <li><i class="bi bi-check-lg"></i><span><strong>Lihat riwayat pribadi</strong> &mdash; hanya melihat absensi sendiri.</span></li>
               <li><i class="bi bi-check-lg"></i><span><strong>Lihat leaderboard</strong> &mdash; peringkat kehadiran peserta magang.</span></li>
               <li><i class="bi bi-check-lg"></i><span><strong>Kebun Magang</strong> &mdash; fitur tambahan berbasis kehadiran.</span></li>
+              <li><i class="bi bi-check-lg"></i><span><strong>Kuis Telkom Akses</strong> &mdash; 10 soal acak per sesi, maksimal 3 sesi per hari.</span></li>
               <li><i class="bi bi-check-lg"></i><span><strong>Bisa ajukan izin/koreksi</strong> &mdash; absen terlambat, izin, sakit, cuti.</span></li>
             </ul>
             <div class="guide-note"><i class="bi bi-info-circle"></i><span>Jika Anda admin tapi ingin mencoba fitur absensi, minta admin lain membuatkan akun peserta khusus untuk testing.</span></div>
@@ -266,7 +274,7 @@ export function renderGuide(role) {
 
     <p class="guide-footer">
       Butuh bantuan lain? Hubungi admin TELKOM AKSES untuk masalah akun, atau
-      <a href="${DEV_WHATSAPP_URL}" target="_blank" rel="noopener noreferrer">chat dev di WhatsApp ${DEV_WHATSAPP_DISPLAY}</a>
+      <a href="${DEV_WHATSAPP_URL}" target="_blank" rel="noopener noreferrer">Hubungi dev via WhatsApp</a>
       bila menemukan bug/error dan sertakan tangkapan layar pesan kesalahan.
     </p>
   `;

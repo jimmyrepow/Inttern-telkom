@@ -3,7 +3,6 @@ const CONFIG = window.TELKOM_CONFIG || {};
 export const APP_NAME = CONFIG.appName || "TELKOM AKSES INTERNSHIP";
 export const APP_CREDITS = "Design inspired by Dhea · Dev Jimmy";
 export const DEV_WHATSAPP_NUMBER = "6281276484493";
-export const DEV_WHATSAPP_DISPLAY = "+62 812-7648-4493";
 export const DEV_WHATSAPP_URL =
   "https://wa.me/" +
   DEV_WHATSAPP_NUMBER +

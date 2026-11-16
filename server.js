@@ -36,7 +36,12 @@ function send(res, status, body, type) {
 }
 
 function isPublicPath(urlPath) {
-  return urlPath === "/" || urlPath === "/index.html" || urlPath.startsWith("/assets/");
+  return (
+    urlPath === "/" ||
+    urlPath === "/index.html" ||
+    urlPath === "/sw.js" ||
+    urlPath.startsWith("/assets/")
+  );
 }
 
 const server = http.createServer((request, response) => {

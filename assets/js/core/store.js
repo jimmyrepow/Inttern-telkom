@@ -72,6 +72,18 @@ export const state = {
   farmTargetsError: "",
   farmTargetsLoadedFor: "",
   farmReminderTriedFor: "",
+  quizProfile: null,
+  quizSession: null,
+  quizRecent: [],
+  quizLeaders: [],
+  quizLoading: false,
+  quizError: "",
+  quizLoadedFor: "",
+  quizServerOffset: 0,
+  quizTick: null,
+  quizAction: "",
+  quizAnswering: 0,
+  quizNotice: null,
   ui: {
     tab: "attendance",
     search: "",
@@ -180,6 +192,19 @@ export function resetSessionState() {
   state.farmTargetsError = "";
   state.farmTargetsLoadedFor = "";
   state.farmReminderTriedFor = "";
+  if (state.quizTick) clearInterval(state.quizTick);
+  state.quizTick = null;
+  state.quizProfile = null;
+  state.quizSession = null;
+  state.quizRecent = [];
+  state.quizLeaders = [];
+  state.quizLoading = false;
+  state.quizError = "";
+  state.quizLoadedFor = "";
+  state.quizServerOffset = 0;
+  state.quizAction = "";
+  state.quizAnswering = 0;
+  state.quizNotice = null;
   state.ui.tab = "attendance";
   state.ui.search = "";
   state.ui.date = "";

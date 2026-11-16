@@ -2,7 +2,7 @@ import { state } from "../core/store.js";
 import { rpc, authErrorMessage } from "../core/api.js";
 import { saveToken } from "../core/session.js";
 import { esc, withBusy } from "../lib/dom.js";
-import { APP_CREDITS, DEV_WHATSAPP_URL, DEV_WHATSAPP_DISPLAY } from "../core/config.js";
+import { APP_CREDITS, DEV_WHATSAPP_URL } from "../core/config.js";
 
 export function renderLogin(message, onSuccess) {
   state.page = "login";
@@ -39,7 +39,7 @@ export function renderLogin(message, onSuccess) {
           </div>
           <div class="text-center small mt-2">
             <a class="auth-help-link" href="${DEV_WHATSAPP_URL}" target="_blank" rel="noopener noreferrer">
-              <i class="bi bi-whatsapp"></i> Ada bug/error? Hubungi dev ${DEV_WHATSAPP_DISPLAY}
+              <i class="bi bi-whatsapp"></i> Ada bug/error? Hubungi dev
             </a>
           </div>
           <div class="auth-features">

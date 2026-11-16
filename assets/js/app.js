@@ -11,8 +11,7 @@ import {
   APP_CREDITS,
   AUTO_REFRESH_MS,
   PHOTO_BUCKET,
-  DEV_WHATSAPP_URL,
-  DEV_WHATSAPP_DISPLAY
+  DEV_WHATSAPP_URL
 } from "./core/config.js";
 import { readToken, clearToken } from "./core/session.js";
 import { esc, confirmDialog, toast } from "./lib/dom.js";
@@ -24,6 +23,7 @@ import { renderAccount, attachAccountEvents } from "./views/account.js";
 import { renderSuggestions, attachSuggestionsEvents } from "./views/suggestions.js";
 import { renderLeaderboard, attachLeaderboardEvents } from "./views/leaderboard.js";
 import { renderFarm, attachFarmEvents, stopFarmTimer } from "./views/farm.js";
+import { renderQuiz, attachQuizEvents, stopQuizTimer } from "./views/quiz.js";
 import { renderLeaves, attachLeavesEvents } from "./views/leaves.js";
 import {
   renderAnnouncements,
@@ -64,6 +64,7 @@ const NAV = {
     { id: "announcements", label: "Pengumuman", icon: "bi-megaphone" },
     { id: "leaderboard", label: "Peringkat", icon: "bi-trophy" },
     { id: "farm", label: "Kebun", icon: "bi-flower1" },
+    { id: "quiz", label: "Kuis", icon: "bi-patch-question" },
     { id: "suggestions", label: "Kotak Saran", icon: "bi-chat-square-text" },
     { id: "account", label: "Akun", icon: "bi-person-gear" },
     { id: "guide", label: "Panduan", icon: "bi-book" }
@@ -91,6 +92,7 @@ const PAGE_META = {
     announcements: { title: "Pengumuman", subtitle: "Informasi dan agenda terbaru dari admin" },
     leaderboard: { title: "Peringkat", subtitle: "Klasemen kehadiran peserta magang" },
     farm: { title: "Kebun Magang", subtitle: "Tanam, rawat, panen, dan curi panen peserta lain" },
+    quiz: { title: "Kuis Telkom Akses", subtitle: "10 soal acak seputar jaringan akses dan layanan" },
     suggestions: { title: "Kotak Saran", subtitle: "Kirim masukan dan lihat balasan admin" },
     account: { title: "Akun Saya", subtitle: "Ubah nama dan password akun Anda" },
     guide: { title: "Panduan", subtitle: "Cara memakai website untuk peserta" }
@@ -162,12 +164,12 @@ function renderDashboardError(message) {
                 <button class="btn btn-primary rounded-pill px-4" id="retry-btn" type="button">Coba lagi</button>
                 <button class="btn btn-outline-dark rounded-pill px-4" id="error-logout" type="button">Keluar</button>
                 <a class="btn btn-success rounded-pill px-4" href="${DEV_WHATSAPP_URL}" target="_blank" rel="noopener noreferrer">
-                  <i class="bi bi-whatsapp me-2"></i>Lapor Dev
+                  <i class="bi bi-whatsapp me-2"></i>Hubungi Dev
                 </a>
               </div>
               <p class="small text-secondary mt-3 mb-0">
-                Masih bermasalah? Hubungi dev di
-                <a href="${DEV_WHATSAPP_URL}" target="_blank" rel="noopener noreferrer">${DEV_WHATSAPP_DISPLAY}</a>
+                Masih bermasalah?
+                <a href="${DEV_WHATSAPP_URL}" target="_blank" rel="noopener noreferrer">Hubungi dev</a>
                 dan sertakan tangkapan layar pesan di atas.
               </p>
             </div>
@@ -270,6 +272,7 @@ function canAutoRefresh() {
     state.ui.tab === "suggestions" ||
     state.ui.tab === "leaderboard" ||
     state.ui.tab === "farm" ||
+    state.ui.tab === "quiz" ||
     state.ui.tab === "guide" ||
     state.ui.tab === "account" ||
     state.ui.tab === "leaves" ||
@@ -463,6 +466,7 @@ function renderDashboard() {
   }
   state.page = "dashboard";
   stopFarmTimer();
+  stopQuizTimer();
   const role = roleKey();
   const isAdmin = role === "admin";
   const nav = NAV[role];
@@ -472,6 +476,7 @@ function renderDashboard() {
   const isSuggestions = state.ui.tab === "suggestions";
   const isLeaderboard = state.ui.tab === "leaderboard";
   const isFarm = state.ui.tab === "farm";
+  const isQuiz = state.ui.tab === "quiz";
   const isAnnouncements = state.ui.tab === "announcements";
   const isLeaves = state.ui.tab === "leaves";
   const content = isAccount
@@ -482,13 +487,15 @@ function renderDashboard() {
         ? renderLeaderboard()
         : isFarm
           ? renderFarm()
-          : isAnnouncements
-            ? renderAnnouncements()
-            : isLeaves
-              ? renderLeaves()
-              : isAdmin
-                ? renderAdmin()
-                : renderIntern();
+          : isQuiz
+            ? renderQuiz()
+            : isAnnouncements
+              ? renderAnnouncements()
+              : isLeaves
+                ? renderLeaves()
+                : isAdmin
+                  ? renderAdmin()
+                  : renderIntern();
 
   app.innerHTML = `
     <div class="app-shell ${state.ui.sidebarOpen ? "sidebar-open" : ""}" id="app-shell">
@@ -502,7 +509,7 @@ function renderDashboard() {
         <footer class="app-footer">
           <span>${esc(APP_NAME)}</span>
           <span class="footer-credit"><i class="bi bi-stars"></i> ${esc(APP_CREDITS)}</span>
-          <a class="footer-contact" href="${DEV_WHATSAPP_URL}" target="_blank" rel="noopener noreferrer" title="Kontak dev jika ada bug/error: ${DEV_WHATSAPP_DISPLAY}">
+          <a class="footer-contact" href="${DEV_WHATSAPP_URL}" target="_blank" rel="noopener noreferrer" title="Hubungi dev via WhatsApp">
             <i class="bi bi-whatsapp"></i> Bug/error? Hubungi dev
           </a>
           <span class="d-none d-sm-inline">Data server: ${esc(state.lastSyncAt || "belum disinkronkan")}</span>
@@ -521,6 +528,8 @@ function renderDashboard() {
     attachLeaderboardEvents({ rerender: renderDashboard, refresh: refreshData });
   else if (isFarm)
     attachFarmEvents({ rerender: renderDashboard, refresh: refreshData });
+  else if (isQuiz)
+    attachQuizEvents({ rerender: renderDashboard, refresh: refreshData });
   else if (isAnnouncements)
     attachAnnouncementsEvents({ rerender: renderDashboard, refresh: refreshData });
   else if (isLeaves)
