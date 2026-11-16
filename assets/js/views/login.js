@@ -35,11 +35,11 @@ export function renderLogin(message, onSuccess) {
             <button class="btn btn-pink btn-lg w-100 rounded-3 text-white fw-semibold" id="login-submit" type="submit">Masuk</button>
           </form>
           <div class="text-center small text-secondary mt-3">
-            Lupa password? Hubungi admin untuk melakukan reset password.
+            Lupa password? Hubungi admin untuk reset password.
           </div>
           <div class="text-center small mt-2">
-            <a class="auth-help-link" href="${DEV_WHATSAPP_URL}" target="_blank" rel="noopener noreferrer">
-              <i class="bi bi-whatsapp"></i> Ada bug/error? Hubungi dev
+            <a class="auth-help-link" href="${esc(DEV_WHATSAPP_URL)}" target="_blank" rel="noopener noreferrer">
+              <i class="bi bi-whatsapp"></i> Ada bug/error? Hubungi developer via WhatsApp
             </a>
           </div>
           <div class="auth-features">
