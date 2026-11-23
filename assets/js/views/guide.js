@@ -99,7 +99,7 @@ export function renderGuide(role) {
           </div>
           <div>
             <h4>Hapus data</h4>
-            <p>Edit satu absensi untuk mengoreksi status tepat waktu/telat serta jam masuk/pulang. Jam pulang tidak boleh lebih awal dari jam masuk. Hapus satu absensi lewat tombol Hapus di tabel; hapus seluruh absensi peserta lewat menu Peserta.</p>
+            <p>Edit satu absensi untuk mengoreksi status tepat waktu/telat, jam masuk/pulang, serta menambah/mengganti/menghapus foto absen masuk/pulang. Jam pulang tidak boleh lebih awal dari jam masuk. Hapus satu absensi lewat tombol Hapus di tabel; hapus seluruh absensi peserta lewat menu Peserta.</p>
           </div>
           <div>
             <h4>Akun nonaktif</h4>

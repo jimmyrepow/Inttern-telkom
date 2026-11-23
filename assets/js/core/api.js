@@ -54,7 +54,7 @@ export function handleError(error) {
     )
   ) {
     toast(
-      "Fitur edit absensi belum tersedia di database. Jalankan npm run migrate pada database Supabase yang digunakan aplikasi, lalu muat ulang halaman.",
+      "Fitur edit absensi/foto belum tersedia di database. Jalankan npm run migrate pada database Supabase yang digunakan aplikasi, lalu muat ulang halaman.",
       "danger"
     );
     return;

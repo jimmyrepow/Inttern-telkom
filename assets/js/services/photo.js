@@ -185,9 +185,11 @@ export function handlePhotoUpload(event) {
   event.target.value = "";
 }
 
-export async function uploadPhoto(blob, kind) {
-  const today = getTodayDate();
-  const path = state.user.id + "/" + today + "_" + kind + "_" + Date.now() + ".jpg";
+export async function uploadPhoto(blob, kind, options) {
+  const opts = options || {};
+  const ownerId = opts.userId || state.user.id;
+  const date = opts.date || getTodayDate();
+  const path = ownerId + "/" + date + "_" + kind + "_" + Date.now() + ".jpg";
   const { error } = await sb.storage.from(PHOTO_BUCKET).upload(path, blob, {
     contentType: "image/jpeg",
     upsert: false

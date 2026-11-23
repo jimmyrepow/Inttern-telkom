@@ -391,9 +391,10 @@ peserta, statistik kehadiran, maupun leaderboard.
   - Insight harian: persentase kehadiran, rasio tepat waktu, dan jumlah peserta
     yang belum absen dalam satu kartu ringkas.
   - Filter absensi berdasarkan pencarian, tanggal, dan status; tabel berpaginasi.
-  - Edit status kehadiran, jam masuk, dan jam pulang; admin boleh mengosongkan
-    jam masuk. Jika jam masuk dikosongkan, jam pulang ikut dikosongkan untuk
-    menjaga konsistensi absensi. Perubahan dicatat di log.
+  - Edit status kehadiran, jam masuk, jam pulang, serta tambah/ganti/hapus foto
+    absen masuk dan pulang; admin boleh mengosongkan jam masuk. Jika jam masuk
+    dikosongkan, jam pulang ikut dikosongkan untuk menjaga konsistensi absensi.
+    Perubahan dicatat di log.
   - Tambah/edit peserta lewat modal, reset password, aktif/nonaktifkan akun,
     pencarian, filter role, dan pagination daftar peserta. Modal juga mengelola
     profil magang: divisi, mentor, tanggal mulai, dan tanggal selesai.

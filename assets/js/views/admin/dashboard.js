@@ -5,7 +5,7 @@ import { getTodayDate, shortTime, statusBadge } from "../../lib/format.js";
 import { statCard, renderPhoto, renderLocation } from "../../lib/render.js";
 import { renderAvatar } from "../../lib/avatar.js";
 import { paginate, renderPagination } from "../../lib/pagination.js";
-import { removePhotos } from "../../services/photo.js";
+import { removePhotos, uploadPhoto } from "../../services/photo.js";
 
 const PAGE_SIZE = 10;
 
@@ -285,6 +285,18 @@ export function attachAdminDashboard(context) {
   }
 }
 
+async function resolveAttendancePhotoEdit(edit, originalUrl, userId, date, kind) {
+  if (!edit || edit.action === "keep") return { value: null, uploadedUrl: "", oldUrl: "" };
+  if (edit.action === "clear") {
+    return { value: "", uploadedUrl: "", oldUrl: originalUrl || "" };
+  }
+  if (edit.action === "set" && edit.file) {
+    const uploaded = await uploadPhoto(edit.file, kind, { userId, date });
+    return { value: uploaded.url, uploadedUrl: uploaded.url, oldUrl: originalUrl || "" };
+  }
+  return { value: null, uploadedUrl: "", oldUrl: "" };
+}
+
 async function handleEditAttendance(attendanceId, button, refresh) {
   const record = state.attendance.find((item) => String(item.id) === String(attendanceId));
   if (!record) {
@@ -296,16 +308,44 @@ async function handleEditAttendance(attendanceId, button, refresh) {
   if (!edited) return;
 
   const restore = withBusy(button, "Menyimpan...");
+  const uploadedUrls = [];
   try {
+    const photoIn = await resolveAttendancePhotoEdit(
+      edited.photoIn,
+      record.photo_url,
+      record.user_id,
+      record.date,
+      "masuk"
+    );
+    if (photoIn.uploadedUrl) uploadedUrls.push(photoIn.uploadedUrl);
+
+    const photoOut = await resolveAttendancePhotoEdit(
+      edited.photoOut,
+      record.photo_out_url,
+      record.user_id,
+      record.date,
+      "pulang"
+    );
+    if (photoOut.uploadedUrl) uploadedUrls.push(photoOut.uploadedUrl);
+
     const result = await rpc("admin_update_attendance", {
       p_id: attendanceId,
       p_check_in: edited.checkIn || null,
       p_check_out: edited.checkOut,
-      p_status: edited.status
+      p_status: edited.status,
+      p_photo_url: photoIn.value,
+      p_photo_out_url: photoOut.value
     });
+
+    const oldUrls = [];
+    if (photoIn.value !== null && photoIn.oldUrl && photoIn.oldUrl !== photoIn.value) oldUrls.push(photoIn.oldUrl);
+    if (photoOut.value !== null && photoOut.oldUrl && photoOut.oldUrl !== photoOut.value) oldUrls.push(photoOut.oldUrl);
+    await removePhotos(oldUrls);
+
     toast(result.message || "Data absensi berhasil diperbarui.", "success");
     await refresh({ silent: true, force: true });
   } catch (error) {
+    if (uploadedUrls.length) await removePhotos(uploadedUrls);
     handleError(error);
   } finally {
     restore();

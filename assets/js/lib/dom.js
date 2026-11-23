@@ -150,6 +150,98 @@ export async function confirmDialog(options) {
   });
 }
 
+function attendancePhotoField(id, label, url) {
+  const has = Boolean(url);
+  return `
+    <div class="mb-3" data-photo-field="${id}">
+      <label class="form-label small fw-semibold mb-1">${esc(label)}</label>
+      <div class="d-flex align-items-start gap-2">
+        <div class="attendance-edit-photo-preview border rounded-3 bg-light d-flex align-items-center justify-content-center overflow-hidden" style="width:72px;height:72px;flex:0 0 72px">
+          ${has ? `<img src="${esc(url)}" alt="${esc(label)}" style="width:100%;height:100%;object-fit:cover" />` : '<span class="small text-secondary">Kosong</span>'}
+        </div>
+        <div class="flex-grow-1">
+          <input id="${id}-input" class="form-control form-control-sm" type="file" accept="image/*" />
+          <div class="d-flex gap-2 mt-1">
+            <button type="button" class="btn btn-outline-danger btn-sm py-0 px-2 ${has ? "" : "d-none"}" data-photo-clear="${id}">Hapus foto</button>
+            <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2 d-none" data-photo-undo="${id}">Urungkan</button>
+          </div>
+          <div class="form-text mt-1" data-photo-status="${id}">${has ? "Foto tersimpan." : "Belum ada foto."}</div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function wireAttendancePhotoField(id, originalUrl) {
+  const input = document.getElementById(id + "-input");
+  const clearBtn = document.querySelector(`[data-photo-clear="${id}"]`);
+  const undoBtn = document.querySelector(`[data-photo-undo="${id}"]`);
+  const status = document.querySelector(`[data-photo-status="${id}"]`);
+  const preview = document.querySelector(`[data-photo-field="${id}"] .attendance-edit-photo-preview`);
+  const state = { action: "keep", file: null, originalUrl: originalUrl || "" };
+
+  const render = () => {
+    let src = "";
+    let label = "Belum ada foto.";
+    if (state.action === "set" && state.file) {
+      src = state.previewUrl || "";
+      label = "Foto baru dipilih (belum disimpan).";
+    } else if (state.action === "clear") {
+      label = "Foto akan dihapus saat disimpan.";
+    } else if (state.originalUrl) {
+      src = state.originalUrl;
+      label = "Foto tersimpan.";
+    }
+    preview.innerHTML = src
+      ? `<img src="${esc(src)}" alt="Preview" style="width:100%;height:100%;object-fit:cover" />`
+      : '<span class="small text-secondary">Kosong</span>';
+    status.textContent = label;
+    clearBtn.classList.toggle("d-none", !(state.action !== "clear" && (state.originalUrl || state.file)));
+    undoBtn.classList.toggle("d-none", state.action === "keep");
+  };
+
+  input.addEventListener("change", () => {
+    const file = input.files && input.files[0];
+    if (!file) return;
+    if (!/^image\//.test(file.type)) {
+      toast("File harus berupa gambar.", "danger");
+      input.value = "";
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      toast("Ukuran foto maksimal 8 MB.", "danger");
+      input.value = "";
+      return;
+    }
+    if (state.previewUrl) URL.revokeObjectURL(state.previewUrl);
+    state.action = "set";
+    state.file = file;
+    state.previewUrl = URL.createObjectURL(file);
+    render();
+  });
+
+  clearBtn.addEventListener("click", () => {
+    if (state.previewUrl) URL.revokeObjectURL(state.previewUrl);
+    state.action = "clear";
+    state.file = null;
+    state.previewUrl = "";
+    input.value = "";
+    render();
+  });
+
+  undoBtn.addEventListener("click", () => {
+    if (state.previewUrl) URL.revokeObjectURL(state.previewUrl);
+    state.action = "keep";
+    state.file = null;
+    state.previewUrl = "";
+    input.value = "";
+    render();
+  });
+
+  render();
+  return state;
+}
+
 export function attendanceEditDialog(record) {
   const checkIn = String(record.check_in || "").slice(0, 5);
   const checkOut = String(record.check_out || "").slice(0, 5);
@@ -187,12 +279,18 @@ export function attendanceEditDialog(record) {
     return Promise.resolve({
       status: nextStatus,
       checkIn: nextCheckIn || null,
-      checkOut: nextCheckOut
+      checkOut: nextCheckOut,
+      photoIn: { action: "keep", file: null },
+      photoOut: { action: "keep", file: null }
     });
   }
 
+  let photoInState;
+  let photoOutState;
+
   return window.Swal.fire({
     title: "Edit absensi",
+    width: 560,
     html: `
       <div class="text-start">
         <p class="small text-secondary mb-3">${esc(record.name)} &middot; ${esc(record.date)}</p>
@@ -205,8 +303,12 @@ export function attendanceEditDialog(record) {
         <input id="edit-attendance-check-in" class="form-control mb-1" type="time" value="${esc(checkIn)}" />
         <div class="form-text mb-3">Kosongkan jam masuk untuk menghapus waktu hadir. Jam pulang akan ikut dikosongkan.</div>
         <label class="form-label small fw-semibold" for="edit-attendance-check-out">Jam pulang</label>
-        <input id="edit-attendance-check-out" class="form-control" type="time" value="${esc(checkOut)}" />
-        <div class="form-text">Kosongkan jam pulang jika peserta belum melakukan absen pulang.</div>
+        <input id="edit-attendance-check-out" class="form-control mb-3" type="time" value="${esc(checkOut)}" />
+        <div class="form-text mb-3">Kosongkan jam pulang jika peserta belum melakukan absen pulang.</div>
+        <hr class="my-3" />
+        <div class="small fw-semibold mb-2">Foto absensi</div>
+        ${attendancePhotoField("edit-photo-in", "Foto masuk", record.photo_url)}
+        ${attendancePhotoField("edit-photo-out", "Foto pulang", record.photo_out_url)}
       </div>
     `,
     showCancelButton: true,
@@ -230,6 +332,8 @@ export function attendanceEditDialog(record) {
       };
       checkInInput.addEventListener("input", updateCheckoutInput);
       updateCheckoutInput();
+      photoInState = wireAttendancePhotoField("edit-photo-in", record.photo_url || "");
+      photoOutState = wireAttendancePhotoField("edit-photo-out", record.photo_out_url || "");
       document.getElementById("edit-attendance-status").focus();
     },
     preConfirm: () => {
@@ -248,7 +352,7 @@ export function attendanceEditDialog(record) {
         window.Swal.showValidationMessage("Jam pulang harus berformat HH:MM.");
         return false;
       }
-      if (nextCheckOut && nextCheckOut < nextCheckIn) {
+      if (nextCheckOut && nextCheckIn && nextCheckOut < nextCheckIn) {
         window.Swal.showValidationMessage("Jam pulang tidak boleh lebih awal dari jam masuk.");
         return false;
       }
@@ -259,7 +363,9 @@ export function attendanceEditDialog(record) {
       return {
         status: nextStatus,
         checkIn: nextCheckIn || null,
-        checkOut: nextCheckOut
+        checkOut: nextCheckOut,
+        photoIn: { action: photoInState.action, file: photoInState.file },
+        photoOut: { action: photoOutState.action, file: photoOutState.file }
       };
     }
   }).then((result) => (result.isConfirmed ? result.value : null));

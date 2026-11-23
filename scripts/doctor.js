@@ -227,16 +227,16 @@ async function main() {
          where n.nspname = 'public'
            and p.proname = 'admin_update_attendance'
            and pg_get_function_identity_arguments(p.oid) =
-             'p_token text, p_id uuid, p_check_in text, p_check_out text, p_status text'
+             'p_token text, p_id uuid, p_check_in text, p_check_out text, p_status text, p_photo_url text, p_photo_out_url text'
        ) as valid`
     );
     if (!attendanceEditRpc.rows[0].valid) {
       console.log(
-        "Edit absensi: RPC admin_update_attendance belum tersedia atau argumennya berbeda."
+        "Edit absensi: RPC admin_update_attendance belum tersedia atau argumennya berbeda. Jalankan migrasi terbaru."
       );
       ok = false;
     } else {
-      console.log("Edit absensi: RPC dan argumen lengkap");
+      console.log("Edit absensi: RPC dan argumen lengkap (termasuk foto)");
     }
 
     const geofenceRpc = await client.query(
