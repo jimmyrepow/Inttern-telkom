@@ -206,6 +206,21 @@ begin
 end;
 $$;
 
+create or replace function public.app_delete_attendance(p_token text, p_id uuid)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare v_admin public.users%rowtype; v_row public.attendance%rowtype; v_target public.users%rowtype;
+begin
+  v_admin := public.require_admin(p_token);
+  select * into v_row from public.attendance where id = p_id;
+  if v_row.id is null then raise exception 'Data absensi tidak ditemukan.'; end if;
+  select * into v_target from public.users where id = v_row.user_id;
+  if v_target.id is not null then perform public.assert_not_protected_target(v_admin, v_target); end if;
+  delete from public.attendance where id = p_id;
+  perform public.log_action(v_admin.username, 'delete-attendance', v_row.name || ' | ' || v_row.date::text);
+  return jsonb_build_object('ok', true, 'message', 'Data absensi berhasil dihapus.', 'photo_urls', jsonb_build_array(v_row.photo_url, v_row.photo_out_url));
+end;
+$$;
+
 -- Block admin/dev attendance
 create or replace function public.app_check_in(
   p_token text, p_location text default '', p_note text default '', p_photo_url text default '',
@@ -330,10 +345,12 @@ end;
 $$;
 
 revoke execute on function public.admin_update_attendance(text, uuid, text, text, text, text, text) from public;
+revoke execute on function public.app_delete_attendance(text, uuid) from public;
 revoke execute on function public.app_check_in(text, text, text, text, double precision, double precision, double precision) from public;
 revoke execute on function public.app_check_out(text, text, text, text, double precision, double precision, double precision) from public;
 revoke execute on function public.app_bootstrap(text) from public;
 grant execute on function public.admin_update_attendance(text, uuid, text, text, text, text, text) to anon, authenticated;
+grant execute on function public.app_delete_attendance(text, uuid) to anon, authenticated;
 grant execute on function public.app_check_in(text, text, text, text, double precision, double precision, double precision) to anon, authenticated;
 grant execute on function public.app_check_out(text, text, text, text, double precision, double precision, double precision) to anon, authenticated;
 grant execute on function public.app_bootstrap(text) to anon, authenticated;
