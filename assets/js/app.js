@@ -102,10 +102,24 @@ const PAGE_META = {
 let listenersBound = false;
 let shellListenersBound = false;
 
+function normalizeRole(role) {
+  const value = String(role || "intern").toLowerCase();
+  return value === "dev" || value === "admin" || value === "intern" ? value : "intern";
+}
+
 function roleKey() {
-  return String((state.user && state.user.role) || "intern").toLowerCase() === "admin"
-    ? "admin"
-    : "intern";
+  const role = normalizeRole(state.user && state.user.role);
+  return role === "admin" || role === "dev" ? "admin" : "intern";
+}
+
+function isDevUser(user) {
+  return normalizeRole((user || state.user || {}).role) === "dev";
+}
+
+function roleLabel(role) {
+  const value = normalizeRole(role);
+  if (value === "dev") return "Developer";
+  return value === "admin" ? "Admin" : "Intern";
 }
 
 function renderLoading(message) {

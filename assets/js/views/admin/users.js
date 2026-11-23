@@ -59,7 +59,7 @@ function renderUserRows(rows) {
             </div>
           </td>
           <td data-label="Username">${esc(user.username)}</td>
-          <td data-label="Role"><span class="badge ${role === "admin" ? "bg-dark" : "bg-light text-dark"} rounded-pill">${esc(role)}</span></td>
+              <td data-label="Role"><span class="badge ${role === "dev" ? "bg-danger" : role === "admin" ? "bg-dark" : "bg-light text-dark"} rounded-pill">${esc(role === "dev" ? "developer" : role)}</span></td>
           <td data-label="Status">${isActiveUser(user) ? '<span class="badge bg-success rounded-pill">Aktif</span>' : '<span class="badge bg-secondary rounded-pill">Nonaktif</span>'}</td>
           <td class="small" data-label="Akun">${accountLines.join("")}</td>
           <td data-label="Aksi">
@@ -116,6 +116,7 @@ export function renderAdminUsersTab() {
               <option value="">Semua role</option>
               <option value="intern"${state.ui.userRole === "intern" ? " selected" : ""}>Intern</option>
               <option value="admin"${state.ui.userRole === "admin" ? " selected" : ""}>Admin</option>
+              <option value="dev"${state.ui.userRole === "dev" ? " selected" : ""}>Developer</option>
             </select>
           </div>
           <div class="col-6 col-md-3">
@@ -216,26 +217,40 @@ export function attachAdminUsers(context) {
 function openUserMenu(anchor, userId, context) {
   const user = state.users.find((item) => String(item.id) === String(userId));
   if (!user) return;
-  const canDeleteAccount = String(user.id) !== String((state.user || {}).id || "");
-  const items = [
-    {
-      label: "Edit peserta",
-      icon: "bi-pencil-square",
-      tone: "primary",
-      onSelect: () => openUserDialog(context, userId)
-    },
-    {
-      label: "Reset password",
-      icon: "bi-key",
-      onSelect: () => handleResetPassword(userId, context.refresh)
-    },
-    {
-      label: "Hapus absensi",
-      icon: "bi-calendar-x",
-      tone: "warning",
-      onSelect: () => handleDeleteUserAttendance(userId, context.refresh)
-    }
-  ];
+  const actorRole = String((state.user || {}).role || "intern").toLowerCase();
+  const targetRole = String(user.role || "intern").toLowerCase();
+  const actorIsDev = actorRole === "dev";
+  const targetIsDev = targetRole === "dev";
+  const canManageTarget = !targetIsDev || actorIsDev;
+  const canDeleteAccount = canManageTarget && String(user.id) !== String((state.user || {}).id || "");
+  const items = [];
+  if (canManageTarget) {
+    items.push(
+      {
+        label: "Edit peserta",
+        icon: "bi-pencil-square",
+        tone: "primary",
+        onSelect: () => openUserDialog(context, userId)
+      },
+      {
+        label: "Reset password",
+        icon: "bi-key",
+        onSelect: () => handleResetPassword(userId, context.refresh)
+      },
+      {
+        label: "Hapus absensi",
+        icon: "bi-calendar-x",
+        tone: "warning",
+        onSelect: () => handleDeleteUserAttendance(userId, context.refresh)
+      }
+    );
+  } else {
+    items.push({
+      label: "Akun developer dilindungi",
+      icon: "bi-shield-lock",
+      disabled: true
+    });
+  }
   if (canDeleteAccount) {
     items.push({
       label: "Hapus akun",
@@ -293,10 +308,12 @@ function openUserDialog(context, userId) {
               <div class="row g-2">
                 <div class="col-6">
                   <label class="form-label small fw-semibold" for="${dialogId}-role">Role</label>
-                  <select id="${dialogId}-role" class="form-select rounded-3">
+                  <select id="${dialogId}-role" class="form-select rounded-3" ${String((state.user || {}).role) !== "dev" && initialRole === "dev" ? "disabled" : ""}>
                     <option value="intern"${initialRole === "intern" ? " selected" : ""}>Intern</option>
                     <option value="admin"${initialRole === "admin" ? " selected" : ""}>Admin</option>
+                    ${String((state.user || {}).role) === "dev" || initialRole === "dev" ? `<option value="dev"${initialRole === "dev" ? " selected" : ""}>Developer</option>` : ""}
                   </select>
+                  ${String((state.user || {}).role) !== "dev" ? '<div class="form-text">Role developer hanya dapat dikelola oleh developer.</div>' : ""}
                 </div>
                 <div class="col-6 d-flex align-items-end">
                   <div class="form-check mb-2">
@@ -441,7 +458,7 @@ function openUserDialog(context, userId) {
         " (@" +
         username +
         ") sebagai " +
-        (role === "admin" ? "admin" : "intern") +
+        (role === "dev" ? "developer" : role === "admin" ? "admin" : "intern") +
         ".",
       confirmLabel: editing ? "Simpan perubahan" : "Tambah peserta",
       tone: "primary",

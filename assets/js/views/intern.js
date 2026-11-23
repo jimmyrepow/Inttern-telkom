@@ -65,6 +65,18 @@ function geofenceBlockedLabel() {
   return "";
 }
 
+function approvedLeaveToday() {
+  const userId = String((state.user && state.user.id) || "");
+  const today = getTodayDate();
+  return (state.leaves || []).find(
+    (row) =>
+      String(row.user_id) === userId &&
+      String(row.status || "").toLowerCase() === "approved" &&
+      String(row.start_date || "") <= today &&
+      String(row.end_date || "") >= today
+  ) || null;
+}
+
 function attendanceSnapshot() {
   const today = getTodayDate();
   const settings = state.settings || {};
@@ -79,6 +91,7 @@ function attendanceSnapshot() {
   );
   const checkoutLimit = checkoutSettingReady ? settings.checkout_limit : "17:00";
   const timezone = settings.timezone || "Asia/Jakarta";
+  const leave = approvedLeaveToday();
 
   return {
     today,
@@ -86,6 +99,8 @@ function attendanceSnapshot() {
     existing,
     hasIn: Boolean(existing && existing.check_in),
     hasOut: Boolean(existing && existing.check_out),
+    leave,
+    isOnApprovedLeave: Boolean(leave),
     lateLimit: settings.late_limit || "08:15",
     checkoutSettingReady,
     checkoutLimit,
@@ -96,6 +111,14 @@ function attendanceSnapshot() {
 }
 
 function attendanceHint(snapshot) {
+  if (snapshot.isOnApprovedLeave) {
+    const type = String((snapshot.leave && snapshot.leave.type) || "izin").toLowerCase();
+    const label = type === "sakit" ? "sakit" : type === "cuti" ? "cuti" : "izin";
+    return {
+      text: "Anda memiliki " + label + " yang disetujui hari ini. Absen tidak diperlukan.",
+      tone: "muted"
+    };
+  }
   if (!snapshot.isWorkday) {
     return {
       text: "Hari ini akhir pekan. Absensi hanya tersedia Senin-Jumat.",
@@ -169,6 +192,7 @@ function attendanceHint(snapshot) {
 }
 
 function checkInLabel(snapshot) {
+  if (snapshot.isOnApprovedLeave) return "Sedang Izin/Cuti";
   if (!snapshot.isWorkday) return "Akhir Pekan";
   if (snapshot.hasIn) return "Sudah Absen Masuk";
   if (state.attendanceSubmitting) return "Menyimpan...";
@@ -182,6 +206,7 @@ function checkInLabel(snapshot) {
 }
 
 function checkOutLabel(snapshot) {
+  if (snapshot.isOnApprovedLeave) return "Sedang Izin/Cuti";
   if (!snapshot.isWorkday) return "Akhir Pekan";
   if (snapshot.hasOut) return "Sudah Absen Pulang";
   if (state.attendanceSubmitting) return "Menyimpan...";
@@ -427,8 +452,8 @@ function renderAbsenView(history) {
               <textarea id="attendance-note" class="form-control rounded-3" rows="2" maxlength="500" placeholder="Contoh: WFO / izin / keterangan tambahan">${esc(state.note)}</textarea>
             </div>
             <div class="d-flex flex-wrap gap-2 mt-3">
-              <button class="btn btn-primary flex-fill rounded-3" id="check-in-btn" type="button" aria-describedby="attendance-ready-hint" ${!isWorkday || hasIn || !geofenceAllowsAttendance() || !photoReady() || state.attendanceSubmitting ? "disabled" : ""}>${esc(checkInLabel(snapshot))}</button>
-              <button class="btn btn-danger flex-fill rounded-3" id="check-out-btn" type="button" aria-describedby="attendance-ready-hint" ${!isWorkday || hasOut || !hasIn || !snapshot.checkoutReady || !geofenceAllowsAttendance() || !photoReady() || state.attendanceSubmitting ? "disabled" : ""}>${esc(checkOutLabel(snapshot))}</button>
+              <button class="btn btn-primary flex-fill rounded-3" id="check-in-btn" type="button" aria-describedby="attendance-ready-hint" ${snapshot.isOnApprovedLeave || !isWorkday || hasIn || !geofenceAllowsAttendance() || !photoReady() || state.attendanceSubmitting ? "disabled" : ""}>${esc(checkInLabel(snapshot))}</button>
+              <button class="btn btn-danger flex-fill rounded-3" id="check-out-btn" type="button" aria-describedby="attendance-ready-hint" ${snapshot.isOnApprovedLeave || !isWorkday || hasOut || !hasIn || !snapshot.checkoutReady || !geofenceAllowsAttendance() || !photoReady() || state.attendanceSubmitting ? "disabled" : ""}>${esc(checkOutLabel(snapshot))}</button>
             </div>
             ${renderAttendanceHint(snapshot)}
             ${todayRow ? '<div class="small text-secondary mt-3">Absen hari ini: masuk ' + esc(shortTime(todayRow.check_in)) + " &middot; pulang " + esc(shortTime(todayRow.check_out)) + " &middot; " + statusBadge(todayRow.status, hasIn) + "</div>" : ""}
@@ -701,6 +726,12 @@ async function handleAttendanceSubmit(type, button, refresh) {
 
   const snapshot = attendanceSnapshot();
 
+  if (snapshot.isOnApprovedLeave) {
+    const type = String((snapshot.leave && snapshot.leave.type) || "izin").toLowerCase();
+    const label = type === "sakit" ? "sakit" : type === "cuti" ? "cuti" : "izin";
+    toast("Anda memiliki " + label + " yang disetujui hari ini. Absen tidak diperlukan.", "warning");
+    return;
+  }
   if (!snapshot.isWorkday) {
     toast("Hari ini akhir pekan. Absensi hanya tersedia Senin-Jumat.", "warning");
     return;
