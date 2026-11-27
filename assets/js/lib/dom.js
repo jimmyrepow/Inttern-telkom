@@ -290,25 +290,35 @@ export function attendanceEditDialog(record) {
 
   return window.Swal.fire({
     title: "Edit absensi",
-    width: 560,
+    width: "min(760px, 96vw)",
     html: `
       <div class="text-start">
         <p class="small text-secondary mb-3">${esc(record.name)} &middot; ${esc(record.date)}</p>
-        <label class="form-label small fw-semibold" for="edit-attendance-status">Status kehadiran</label>
-        <select id="edit-attendance-status" class="form-select mb-3">
-          <option value="on-time"${record.status === "on-time" ? " selected" : ""}>Tepat waktu</option>
-          <option value="late"${record.status === "late" ? " selected" : ""}>Telat</option>
-        </select>
-        <label class="form-label small fw-semibold" for="edit-attendance-check-in">Jam masuk</label>
-        <input id="edit-attendance-check-in" class="form-control mb-1" type="time" value="${esc(checkIn)}" />
-        <div class="form-text mb-3">Kosongkan jam masuk untuk menghapus waktu hadir. Jam pulang akan ikut dikosongkan.</div>
-        <label class="form-label small fw-semibold" for="edit-attendance-check-out">Jam pulang</label>
-        <input id="edit-attendance-check-out" class="form-control mb-3" type="time" value="${esc(checkOut)}" />
-        <div class="form-text mb-3">Kosongkan jam pulang jika peserta belum melakukan absen pulang.</div>
-        <hr class="my-3" />
-        <div class="small fw-semibold mb-2">Foto absensi</div>
-        ${attendancePhotoField("edit-photo-in", "Foto masuk", record.photo_url)}
-        ${attendancePhotoField("edit-photo-out", "Foto pulang", record.photo_out_url)}
+        <div class="row g-3">
+          <div class="col-12 col-md-6">
+            <div class="border rounded-3 p-3 h-100">
+              <div class="small fw-semibold mb-3">Waktu & status</div>
+              <label class="form-label small fw-semibold" for="edit-attendance-status">Status kehadiran</label>
+              <select id="edit-attendance-status" class="form-select mb-3">
+                <option value="on-time"${record.status === "on-time" ? " selected" : ""}>Tepat waktu</option>
+                <option value="late"${record.status === "late" ? " selected" : ""}>Telat</option>
+              </select>
+              <label class="form-label small fw-semibold" for="edit-attendance-check-in">Jam masuk</label>
+              <input id="edit-attendance-check-in" class="form-control mb-1" type="time" value="${esc(checkIn)}" />
+              <div class="form-text mb-3">Kosongkan jam masuk untuk menghapus waktu hadir. Jam pulang akan ikut dikosongkan.</div>
+              <label class="form-label small fw-semibold" for="edit-attendance-check-out">Jam pulang</label>
+              <input id="edit-attendance-check-out" class="form-control mb-1" type="time" value="${esc(checkOut)}" />
+              <div class="form-text mb-0">Kosongkan jam pulang jika peserta belum melakukan absen pulang.</div>
+            </div>
+          </div>
+          <div class="col-12 col-md-6">
+            <div class="border rounded-3 p-3 h-100">
+              <div class="small fw-semibold mb-3">Foto absensi</div>
+              ${attendancePhotoField("edit-photo-in", "Foto masuk", record.photo_url)}
+              ${attendancePhotoField("edit-photo-out", "Foto pulang", record.photo_out_url)}
+            </div>
+          </div>
+        </div>
       </div>
     `,
     showCancelButton: true,
@@ -317,7 +327,7 @@ export function attendanceEditDialog(record) {
     reverseButtons: true,
     focusConfirm: false,
     customClass: {
-      popup: "rounded-4",
+      popup: "rounded-4 attendance-edit-dialog",
       confirmButton: "btn btn-primary rounded-pill px-4",
       cancelButton: "btn btn-outline-secondary rounded-pill px-4"
     },

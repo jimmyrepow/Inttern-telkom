@@ -4763,3 +4763,13 @@ body.sidebar-locked {
   }
 }
 
+
+.attendance-edit-dialog .swal2-html-container {
+  margin: 0.5rem 0 0;
+}
+
+@media (max-width: 767.98px) {
+  .attendance-edit-dialog {
+    padding: 1rem;
+  }
+}
