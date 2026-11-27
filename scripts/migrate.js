@@ -122,10 +122,10 @@ async function main() {
       }
       if (/^db\..+\.supabase\.co$/i.test(hostname)) {
         console.error(
-          "Host database langsung Supabase tidak dapat dijangkau dari jaringan ini (host langsung hanya IPv6)."
+          "Host database langsung tidak dapat dijangkau dari jaringan ini (host langsung hanya IPv6)."
         );
         console.error(
-          "Di Supabase Dashboard > Project Settings > Database, salin connection string Session Pooler dan ganti DATABASE_URL di .env. Jangan ubah user, password, database, atau host pooler."
+          "Di dashboard database > Project Settings > Database, salin connection string Session Pooler dan ganti DATABASE_URL di .env. Jangan ubah user, password, database, atau host pooler."
         );
         console.error(
           "Setelah itu jalankan npm run migrate, lalu npm run migrate:status."

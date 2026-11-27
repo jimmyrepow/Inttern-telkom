@@ -142,13 +142,13 @@ function renderConfigError() {
               <img src="assets/logo.png" alt="Telkom Akses by Telkom Indonesia" class="brand-logo brand-logo-auth" width="1875" height="624" decoding="async" />
             </div>
             <h1 class="h4 fw-bold mb-1">Konfigurasi belum lengkap</h1>
-            <p class="text-secondary small mb-0">Isi URL dan publishable key Supabase terlebih dahulu.</p>
+            <p class="text-secondary small mb-0">Konfigurasi aplikasi belum lengkap.</p>
           </div>
           <div class="alert alert-warning small">
-            Buka <code>assets/js/config.js</code> lalu ganti:
+            Periksa file konfigurasi aplikasi, lalu pastikan:
             <ul class="mb-0 mt-2 ps-3">
-              <li><code>supabaseUrl</code> dengan URL project Supabase.</li>
-              <li><code>supabaseAnonKey</code> dengan publishable key.</li>
+              <li><code>supabaseUrl</code> berisi URL project yang benar.</li>
+              <li><code>supabaseAnonKey</code> berisi publishable key yang benar.</li>
             </ul>
           </div>
           <ol class="small text-secondary ps-3 mb-0">
@@ -219,7 +219,7 @@ async function loadDashboard() {
     renderLogin("", loadDashboard);
     return;
   }
-  renderLoading("Memuat data dari Supabase...");
+  renderLoading("Memuat data...");
   try {
     const data = await rpc("app_bootstrap");
     applyBootstrap(data);

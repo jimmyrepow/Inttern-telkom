@@ -40,7 +40,7 @@ function normalizeConnectionString(value) {
   const passwordSeparator = credentials.indexOf(":");
   if (passwordSeparator < 1 || !hostAndPath) {
     throw new Error(
-      "DATABASE_URL tidak valid. Gunakan connection string PostgreSQL lengkap dari Supabase Dashboard."
+      "DATABASE_URL tidak valid. Gunakan connection string PostgreSQL lengkap dari dashboard database."
     );
   }
 
@@ -91,8 +91,8 @@ function connectionConfig() {
     const directSupabaseHost = /^db\..+\.supabase\.co(?::\d+)?$/i.test(hostPart);
     throw new Error(
       directSupabaseHost
-        ? "DATABASE_URL tidak valid dan masih memakai host database langsung Supabase. Gunakan connection string Session Pooler dari Supabase Dashboard; pastikan karakter khusus pada password sudah di-URL-encode."
-        : "DATABASE_URL tidak valid. Gunakan connection string PostgreSQL lengkap dari Supabase Dashboard dan URL-encode karakter khusus pada username/password."
+        ? "DATABASE_URL tidak valid dan masih memakai host database langsung. Gunakan connection string Session Pooler dari dashboard database; pastikan karakter khusus pada password sudah di-URL-encode."
+        : "DATABASE_URL tidak valid. Gunakan connection string PostgreSQL lengkap dari dashboard database dan URL-encode karakter khusus pada username/password."
     );
   }
 

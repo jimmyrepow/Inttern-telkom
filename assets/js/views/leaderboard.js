@@ -372,7 +372,7 @@ export function renderLeaderboard() {
         <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
           <div>
             <h2 class="h5 fw-bold mb-1"><i class="bi bi-trophy text-warning me-2"></i>Kebun Magang</h2>
-            <div class="small text-secondary">${esc(periodLabel(key))} &middot; ${ready ? state.leaderboardRows.length + " peserta" : "memuat data"}${state.leaderboardGeneratedAt ? " &middot; diperbarui " + esc(String(state.leaderboardGeneratedAt).replace("T", " ")) : ""}</div>
+            <div class="small text-secondary">${esc(periodLabel(key))} &middot; ${ready ? state.leaderboardRows.length + " peserta" : "memuat..."}${state.leaderboardGeneratedAt ? " &middot; diperbarui " + esc(String(state.leaderboardGeneratedAt).replace("T", " ")) : ""}</div>
           </div>
           <div class="d-flex align-items-center gap-2 flex-wrap">
             <input id="leaderboard-month" class="form-control form-control-sm rounded-3" type="month" value="${esc(selectedMonth)}" max="${esc(currentMonth())}" aria-label="Pilih bulan peringkat" style="max-width: 170px" />

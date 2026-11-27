@@ -2,7 +2,7 @@
   "name": "telkom-akses-supabase",
   "version": "1.0.0",
   "private": true,
-  "description": "Website absensi TELKOM AKSES INTERNSHIP berbasis Supabase",
+  "description": "Website absensi TELKOM AKSES INTERNSHIP",
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",

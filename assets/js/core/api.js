@@ -18,7 +18,7 @@ export function setSessionExpiredHandler(handler) {
 }
 
 export async function rpc(name, params) {
-  if (!sb) throw new Error("Supabase belum dikonfigurasi.");
+  if (!sb) throw new Error("Aplikasi belum dikonfigurasi.");
   const payload = Object.assign({}, params || {});
   if (state.token && name !== "app_login") payload.p_token = state.token;
   const { data, error } = await sb.rpc(name, payload);
@@ -54,7 +54,7 @@ export function handleError(error) {
     )
   ) {
     toast(
-      "Fitur edit absensi/foto belum tersedia di database. Jalankan npm run migrate pada database Supabase yang digunakan aplikasi, lalu muat ulang halaman.",
+      "Fitur edit absensi/foto belum tersedia di database. Jalankan npm run migrate pada database yang digunakan aplikasi, lalu muat ulang halaman.",
       "danger"
     );
     return;

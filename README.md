@@ -1,9 +1,9 @@
 # TELKOM AKSES INTERNSHIP - Website Absensi
 
 Website absensi peserta magang **TELKOM AKSES**. Frontend memakai **Bootstrap 5**
-dan JavaScript modular tanpa build tool. Data disimpan di **Supabase PostgreSQL**
-dan foto absensi di **Supabase Storage**. Login memakai username + password biasa,
-tanpa email dan tanpa Supabase Auth.
+dan JavaScript modular tanpa build tool. Data disimpan di database PostgreSQL
+dan foto absensi di storage cloud. Login memakai username + password biasa,
+tanpa email dan tanpa auth pihak ketiga.
 
 Seluruh website berada langsung di **root project** (tidak ada folder `website`,
 `WEB`, `supabase_web`, atau `gas_push_telkom`). Versi Google Apps Script sudah
@@ -32,13 +32,13 @@ tidak dipakai.
     site.webmanifest        metadata nama dan ikon PWA
     logo.png                logo Telkom Akses (login, sidebar, error config)
     js/
-      config.js             URL + publishable key Supabase
+      config.js             URL + publishable key aplikasi
       app.js                entry point: sesi, dashboard, auto-refresh
       core/
         config.js           pembacaan konfigurasi
         session.js          simpan/baca/hapus token
         store.js            state aplikasi
-        api.js              klien Supabase, RPC, penanganan error
+        api.js              klien API, RPC, penanganan error
       lib/
         dom.js              escape HTML, toast, modal, tombol sibuk
         format.js           tanggal, jam, status, akun aktif
@@ -119,13 +119,13 @@ tidak dipakai.
 ## Prasyarat
 
 - Node.js 18 atau lebih baru.
-- Akses internet ke `*.supabase.co`.
-- Koneksi database langsung memakai IPv6. Jika jaringan tidak mendukung IPv6,
-  gunakan **Session Pooler** dari Supabase Dashboard (lihat Troubleshooting).
+- Akses internet ke endpoint database/API aplikasi.
+- Koneksi database langsung mungkin membutuhkan IPv6. Jika jaringan tidak mendukungnya,
+  gunakan **Session Pooler** dari dashboard database (lihat Troubleshooting).
 
 ## 1. Environment
 
-File **`.env`** (bukan `.env.local`) cukup berisi konfigurasi Supabase:
+File **`.env`** (bukan `.env.local`) cukup berisi konfigurasi aplikasi:
 
 ```
 SUPABASE_URL=https://<project-ref>.supabase.co
@@ -222,7 +222,7 @@ absensi admin tidak muncul di rekap peserta, statistik kehadiran hanya
 menghitung peserta, dan leaderboard hanya untuk peserta magang. Admin tetap
 bisa melihat semua akun (termasuk admin lain) untuk keperluan manajemen,
 approved/absensi peserta, dan export Excel.
-Jika koneksi dari komputer tidak tersedia, buka Supabase Dashboard > SQL Editor,
+Jika koneksi dari komputer tidak tersedia, buka SQL Editor di dashboard database,
 lalu jalankan isi file migrasi terbaru yang belum diterapkan secara berurutan.
 Setelah itu muat ulang aplikasi agar RPC baru terdeteksi.
 
@@ -384,7 +384,7 @@ peserta, statistik kehadiran, maupun leaderboard.
 
 ## 9. Fitur
 
-- Login username + password tanpa email dan tanpa Supabase Auth.
+- Login username + password tanpa email dan tanpa auth pihak ketiga.
 - Sesi otomatis diperiksa ulang; sesi kedaluwarsa diarahkan ke login.
 - Dashboard admin:
   - Statistik peserta, hadir, tepat waktu, telat, belum absen.
@@ -471,7 +471,7 @@ peserta, statistik kehadiran, maupun leaderboard.
 - Bucket foto bersifat publik untuk kemudahan tampilan; path memakai UUID user.
 - Segera rotate `SUPABASE_SECRET_KEY` dan password database jika pernah
   terekspos di chat, screenshot, atau repositori.
-- Tidak perlu mengaktifkan provider Auth apa pun di Supabase Dashboard.
+- Tidak perlu mengaktifkan provider auth pihak ketiga di dashboard.
 
 ## 12. Peran Admin vs Peserta
 
@@ -527,12 +527,11 @@ untuk keperluan testing absensi.
 
 ### `getaddrinfo ENOTFOUND db.<ref>.supabase.co`
 
-Host database Supabase hanya memiliki record IPv6. Gunakan **Session Pooler**:
+Host database langsung mungkin hanya memiliki record IPv6. Gunakan **Session Pooler**:
 
-1. Buka Supabase Dashboard > **Project Settings > Database**.
+1. Buka dashboard database > **Project Settings > Database**.
 2. Salin connection string **Session Pooler**.
-3. Ganti `DATABASE_URL` dengan connection string **Session Pooler**. Contoh
-   host: `aws-0-<region>.pooler.supabase.com`, user `postgres.<ref>`.
+3. Ganti `DATABASE_URL` dengan connection string **Session Pooler** sesuai project.
 
 Migrator akan mencoba ulang untuk kegagalan sementara. Kesalahan DNS atau
 jaringan IPv6 langsung diberi petunjuk tanpa menunggu semua percobaan ulang.
@@ -550,7 +549,7 @@ adalah `5500`.
 
 - Pastikan `SUPABASE_URL` benar dan project tidak sedang paused.
 - Jalankan `npm run migrate:status` dan `npm run doctor`.
-- Coba buka `https://<project-ref>.supabase.co/rest/v1/` di browser.
+- Coba buka endpoint REST API project di browser.
 - Jaringan tertentu sempat memblokir sementara Cloudflare; coba lagi.
 
 ### Kamera atau GPS tidak muncul
@@ -577,7 +576,7 @@ assets/
 ```
 
 Impor repository ke Vercel dengan root directory `/`; pengaturan build dan
-output sudah didefinisikan di `vercel.json`. Frontend memakai Supabase URL dan
+output sudah didefinisikan di `vercel.json`. Frontend memakai URL API dan
 publishable key dari `assets/js/config.js`, jadi tidak perlu menambahkan
 `SUPABASE_SECRET_KEY`, `DATABASE_URL`, atau `PGPASSWORD` ke environment
 deployment frontend. Jangan deploy `.env`, `scripts/`, `supabase/`,

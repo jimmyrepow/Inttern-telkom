@@ -14,7 +14,7 @@ export function renderAdminSettingsTab() {
             <h2 class="h5 fw-bold mb-3">Koneksi backend</h2>
             <table class="table table-sm align-middle mb-0">
               <tbody>
-                <tr><th class="text-secondary fw-normal">Mode</th><td>Supabase</td></tr>
+                <tr><th class="text-secondary fw-normal">Mode</th><td>Online</td></tr>
                 <tr><th class="text-secondary fw-normal">Status</th><td>${state.syncError ? "Bermasalah" : "Terhubung"}</td></tr>
                 <tr><th class="text-secondary fw-normal">Project</th><td class="text-break-anywhere">${esc(projectHost())}</td></tr>
                 <tr><th class="text-secondary fw-normal">Storage foto</th><td><code>${esc(PHOTO_BUCKET)}</code></td></tr>
@@ -101,7 +101,7 @@ export function renderAdminSettingsTab() {
         <h2 class="h5 fw-bold mb-2">Catatan penyimpanan</h2>
         <ul class="small text-secondary mb-0 ps-3">
           <li class="mb-1">Akun login dikelola langsung di tabel <code>users</code> dengan username dan password.</li>
-          <li class="mb-1">Data akun, absensi, pengaturan, dan log disimpan di PostgreSQL Supabase.</li>
+          <li class="mb-1">Data akun, absensi, pengaturan, dan log disimpan di database aplikasi.</li>
           <li class="mb-1">Foto absen masuk/pulang disimpan di bucket <code>${esc(PHOTO_BUCKET)}</code>.</li>
           <li>Password di-hash bcrypt di kolom <code>users.password</code>. Tabel juga menyimpan <code>password_updated_at</code> dan <code>last_login_at</code>.</li>
         </ul>
